@@ -241,7 +241,12 @@ def get_config_constant_file():
 
     :rtype: object
     """
-    _constants_file = "/ofix/tienda_virtual/constants/constants.yml"
+
+    # TEST
+    _constants_file = "constants/constants.yml"
+
+    # PROD
+    # _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
     cfg = const.get_constants_file(_constants_file)
 
     return cfg

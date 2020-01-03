@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+Requires Python 3.0 or later
+"""
+
+__author__ = "Jorge Morfinez Mojica (jorgemorfinez@ofix.mx)"
+__copyright__ = "Copyright 2019, Jorge Morfinez Mojica"
+__license__ = "Ofix S.A. de C.V."
+__history__ = """ """
+__version__ = "1.19.L20.Prod ($Rev: 3 $)"
+
 """Oracle DB backend (db-oracle).
 
 Each one of the CRUD operations should be able to open a database connection if
@@ -160,7 +171,10 @@ def exists_data_row(session, table_name, column_name, column_filter1, value1, co
 def validate_brand_exists(session, integration_id, brand_id):
 
     brand_validation = session.query(BrandTable).filter(BrandTable.integracion_id == integration_id).\
-        filter(BrandTable.marca_id == "'"+brand_id+"'").scalar()
+        filter(BrandTable.marca_id == brand_id).scalar()
+
+    logger.info('Datos a validar Marca almacenada en BD: %s', 'Integracion_Id: {}, Marca_Id: {}'.format(integration_id,
+                                                                                                        brand_id))
 
     return brand_validation
 
@@ -171,13 +185,13 @@ def update_brand(session, integration_id, brand_id, brand):
 
     # update row to database
     session.query(BrandTable).filter(BrandTable.integracion_id == integration_id).\
-        filter(BrandTable.marca_id == "'"+brand_id+"'").update({"brand": "'"+brand+"'",
-                                                                "last_update_date": last_update_date},
-                                                               synchronize_session='fetch')
+        filter(BrandTable.marca_id == brand_id).update({"brand": brand,
+                                                        "last_update_date": last_update_date},
+                                                       synchronize_session='fetch')
 
     # check update correct
     row = session.query(BrandTable).filter(BrandTable.integracion_id == integration_id).\
-        filter(BrandTable.marca_id == "'"+brand_id+"'").first()
+        filter(BrandTable.marca_id == brand_id).first()
 
     logger.info('Brand Updated: %s', row.brand)
 
@@ -205,7 +219,8 @@ def insert_new_brand(session, integration_id, brand_id, brand):
         filter(BrandTable.marca_id == brand_id)
 
     for data_brand in row_inserted:
-        logger.info('Brand inserted is: %s', data_brand.marca_id, ' - ', data_brand.brand)
+        logger.info('Brand inserted is: %s', 'Marca_ID: {}, Nombre_Marca: {}'.format(data_brand.marca_id,
+                                                                                     data_brand.brand))
 
     session.commit()
 
@@ -231,6 +246,8 @@ class BrandTable(Base):
 
             brand_validation = validate_brand_exists(session, integration_id, brand_id)
 
+            logger.info('Brand stored on database: %s', brand_validation)
+
             # insert validation
             if brand_validation:
 
@@ -255,7 +272,10 @@ class BrandTable(Base):
 def validate_category_exists(session, integration_id, category_id):
 
     category_validation = session.query(CategoryTable).filter(CategoryTable.integracion_id == integration_id). \
-        filter(CategoryTable.category_id == "'"+category_id+"'").scalar()
+        filter(CategoryTable.category_id == category_id).scalar()
+
+    logger.info('Data Category store validation: %s', 'Integracion_Id: {}, Category_Id: {}'.format(integration_id,
+                                                                                                   category_id))
 
     return category_validation
 
@@ -266,14 +286,14 @@ def update_category_by_name(session, integration_id, category_id, category_name,
 
     # update row to database
     session.query(CategoryTable).filter(CategoryTable.integracion_id == integration_id).\
-        filter(CategoryTable.category_id == "'"+category_id+"'").update({"category": "'"+category_name+"'",
-                                                                         "last_update_date": last_update_date,
-                                                                         "parent_id": parent_id},
-                                                                        synchronize_session='fetch')
+        filter(CategoryTable.category_id == category_id).update({"category": category_name,
+                                                                 "last_update_date": last_update_date,
+                                                                 "parent_id": parent_id},
+                                                                synchronize_session='fetch')
 
     # check update correct
     row = session.query(CategoryTable).filter(CategoryTable.integracion_id == integration_id). \
-        filter(CategoryTable.category_id == "'"+category_name+"'").first()
+        filter(CategoryTable.category_id == category_id).first()
 
     logger.info('Category Updated: Category_Id -> %s', row.category_id + " Category_Name -> " + row.category +
                 " Parent_Id -> " + row.parent_id)
@@ -305,7 +325,9 @@ def insert_new_category(session, integration_id, category_id, category_name, par
         filter(CategoryTable.category_id == category_id)
 
     for data_category in row_inserted:
-        logger.info('Category inserted is: %s', data_category.category_id, ' - ', data_category.category_name)
+        logger.info('Category inserted is: %s', 'Category_Id: {}, '
+                                                'Category_Name: {}'.format(data_category.category_id,
+                                                                           data_category.category))
 
     session.commit()
 
@@ -319,7 +341,7 @@ class CategoryTable(Base):
     integracion_id = Column(cfg['DB_COLUMNS_DATA']['INTEGRATION_ID'], Integer, primary_key=True)
     category_id = Column(cfg['DB_COLUMNS_DATA']['CATEGORIES']['CAT_ID'], String, primary_key=True)
     parent_id = Column(cfg['DB_COLUMNS_DATA']['CATEGORIES']['PARENT_ID'], String)
-    category_name = Column(cfg['DB_COLUMNS_DATA']['CATEGORIES']['CAT_NAME'], String)
+    category = Column(cfg['DB_COLUMNS_DATA']['CATEGORIES']['CAT_NAME'], String)
     created_by = Column(cfg['DB_COLUMNS_DATA']['USER_ID'], Integer)
     last_updated_by = Column(cfg['DB_COLUMNS_DATA']['USER_UPD_ID'], String)
     last_update_date = Column(cfg['DB_COLUMNS_DATA']['LAST_UPDATE_DATE'], String)
@@ -331,6 +353,8 @@ class CategoryTable(Base):
             session = self
 
             category_exists = validate_category_exists(session, integration_id, category_id)
+
+            logger.info('Category stored on database: %s', category_exists)
 
             if category_exists:
 
@@ -357,7 +381,7 @@ class CategoryTable(Base):
 def validate_price_in_sku_exists(session, integration_id, sku):
 
     price_validation = session.query(PricesTable).filter(PricesTable.integracion_id == integration_id).\
-        filter(PricesTable.sku == "'"+sku+"'").scalar()
+        filter(PricesTable.sku == sku).scalar()
 
     return price_validation
 
@@ -368,19 +392,19 @@ def update_product_price(session, integration_id, sku, stock_total, precio, mone
 
     # update row to database
     session.query(PricesTable).filter(PricesTable.integracion_id == integration_id).\
-        filter(PricesTable.sku == "'"+sku+"'").update({"stock_total": stock_total,
-                                                       "precio": precio,
-                                                       "moneda": moneda,
-                                                       "tipo_cambio": tipo_cambio,
-                                                       "last_update_date": last_update_date},
-                                                      synchronize_session='fetch')
+        filter(PricesTable.sku == sku).update({"stock_total": stock_total,
+                                               "precio": precio,
+                                               "moneda": moneda,
+                                               "tipo_cambio": tipo_cambio,
+                                               "last_update_date": last_update_date},
+                                              synchronize_session='fetch')
 
     # check update correct
     row = session.query(PricesTable).filter(PricesTable.integracion_id == integration_id).\
-        filter(PricesTable.sku == "'"+sku+"'").first()
+        filter(PricesTable.sku == sku).first()
 
-    logger.info('Category Updated: SKU -> %s', row.sku + " Precio -> " + row.precio +
-                " Stock_Total -> " + row.stock_total)
+    logger.info('Price Updated: %s', 'SKU -> {}, Precio -> {}, Stock_Total -> {}'.format(row.sku, row.precio,
+                                                                                         row.stock_total))
 
     session.commit()
 
@@ -409,7 +433,9 @@ def insert_new_product_price(session, integration_id, sku, stock_total, precio, 
         filter(PricesTable.sku == sku)
 
     for data_price in row_inserted:
-        logger.info('Price inserted is: %s', data_price.sku, ' - ', data_price.price, ' - ', data_price.stock_total)
+        logger.info('Price inserted is: %s', 'Producto: {}, Precio: {}, Existencia: {}'.format(data_price.sku,
+                                                                                               data_price.precio,
+                                                                                               data_price.stock_total))
 
     session.commit()
 
@@ -436,6 +462,8 @@ class PricesTable(Base):
 
             valid_product_price = validate_price_in_sku_exists(session, integration_id, sku)
 
+            logger.info('Price of product stored on database: %s', valid_product_price)
+
             if valid_product_price:
 
                 update_product_price(session, integration_id, sku, stock_total, price, moneda, tipo_cambio)
@@ -449,6 +477,211 @@ class PricesTable(Base):
             raise mvc_exc.ItemNotStored(
                 'Can\'t insert SKU: "{}" with Precio: {} because it\'s not stored in "{}"'.format(
                     sku, price, PricesTable.__tablename__
+                )
+            )
+        finally:
+            session.close()
+
+
+def update_all_products_status(session):
+
+    cfg = get_config_constant_file()
+
+    last_update_date = get_systimestamp_date(session)
+    # user_id = cfg['DB_COL_DATA']['USER_ID']
+    user_id_upd = cfg['DB_COL_DATA']['USER_ID']
+    status = cfg['DB_COL_DATA']['STATUS_INACTIVO']
+    integration_id = int(cfg['INTEGRACION_SOURCES']['INTEGRATION_ID'])
+
+    # update row to database
+    session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id).\
+        filter(ProductsTable.status != status).update({"status": status,
+                                                       "last_updated_by": user_id_upd,
+                                                       "last_update_date": last_update_date},
+                                                      synchronize_session='fetch')
+
+    session.commit()
+
+
+def validate_product_exists(session, integration_id, sku):
+    product_validation = session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id).\
+        filter(ProductsTable.sku == sku).scalar()
+
+    return product_validation
+
+
+def update_product_data(session,
+                        integration_id,
+                        sku,
+                        codigo_fab,
+                        nombre_prod,
+                        length,
+                        height,
+                        width,
+                        weight,
+                        category_id,
+                        marca_id,
+                        short_desc,
+                        long_description):
+
+    cfg = get_config_constant_file()
+
+    last_update_date = get_systimestamp_date(session)
+    # user_id = cfg['DB_COL_DATA']['USER_ID']
+    user_id_upd = cfg['DB_COL_DATA']['USER_ID']
+    status = cfg['DB_COL_DATA']['STATUS_ACTIVO']
+
+    session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id).\
+        filter(ProductsTable.sku == sku).update({"codigo_fabricante": codigo_fab,
+                                                 "nombre_producto": nombre_prod,
+                                                 "length": length,
+                                                 "height": height,
+                                                 "width": width,
+                                                 "weight": weight,
+                                                 "category_id": category_id,
+                                                 "marca_id": marca_id,
+                                                 "descripcion_corta": short_desc,
+                                                 "descripcion_larga": long_description,
+                                                 "last_updated_by": user_id_upd,
+                                                 "last_update_date": last_update_date},
+                                                synchronize_session='fetch')
+
+    session.commit()
+
+
+def insert_new_product(session,
+                       integration_id,
+                       sku,
+                       codigo_fab,
+                       nombre_prod,
+                       length,
+                       height,
+                       width,
+                       weight,
+                       category_id,
+                       marca_id,
+                       short_desc,
+                       large_description):
+
+    cfg = get_config_constant_file()
+
+    last_update_date = get_systimestamp_date(session)
+    user_id = cfg['DB_COL_DATA']['USER_ID']
+    user_id_upd = cfg['DB_COL_DATA']['USER_ID']
+
+    new_product = ProductsTable(integracion_id=integration_id,
+                                sku=sku,
+                                nombre_producto=nombre_prod,
+                                codigo_fabricante=codigo_fab,
+                                length=length,
+                                height=height,
+                                width=width,
+                                weight=weight,
+                                category_id=category_id,
+                                marca_id=marca_id,
+                                descripcion_corta=short_desc,
+                                descripcion_larga=large_description,
+                                created_by=user_id,
+                                last_updated_by=user_id_upd,
+                                last_update_date=last_update_date)
+
+    session.add(new_product)
+
+    # check insert correct
+    row_inserted = session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id).\
+        filter(ProductsTable.sku == sku)
+
+    for data_product in row_inserted:
+        logger.info('Product inserted is: %s', 'SKU: {}, '
+                                               'Nombre: {}, '
+                                               'Cod. Fabricante: {}'.format(data_product.sku,
+                                                                            data_product.nombre_producto,
+                                                                            data_product.codigo_fabricante))
+
+    session.commit()
+
+
+class ProductsTable(Base):
+
+    cfg = get_config_constant_file()
+
+    __tablename__ = cfg['DB_ORACLE_OBJECTS']['INT_PRODUCTS']
+
+    integracion_id = Column(cfg['DB_COLUMNS_DATA']['INTEGRATION_ID'], Integer, primary_key=True)
+    sku = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['SKU'], String, primary_key=True)
+    codigo_fabricante = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['CODIGO_FABRICANTE'], String)
+    nombre_producto = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['TITULO'], String)
+    length = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['LENGTH'], Numeric)
+    height = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['HEIGHT'], Numeric)
+    width = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['WIDTH'], Numeric)
+    weight = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['WEIGHT'], Numeric)
+    created_by = Column(cfg['DB_COLUMNS_DATA']['USER_ID'], Integer)
+    last_updated_by = Column(cfg['DB_COLUMNS_DATA']['USER_UPD_ID'], String)
+    last_update_date = Column(cfg['DB_COLUMNS_DATA']['LAST_UPDATE_DATE'], String)
+    status = Column(cfg['DB_COLUMNS_DATA']['STATUS'], String)
+    category_id = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['CATEGORY_ID'], String)
+    marca_id = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['MARCA_ID'], String)
+    descripcion_corta = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['SHORT_DESCRIPTION'], String)
+    descripcion_larga = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['DESCRIPCION_LARGA'], String)
+
+    def manage_products_database(self,
+                                 integracion_id,
+                                 sku,
+                                 codigo_fab,
+                                 nombre_prod,
+                                 length,
+                                 height,
+                                 width,
+                                 weight,
+                                 category_id,
+                                 marca_id,
+                                 short_desc,
+                                 large_description):
+        try:
+
+            session = self
+
+            product_exists = validate_product_exists(session, integracion_id, sku)
+
+            logger.info('Product Integrator stored on database: %s', product_exists)
+
+            if product_exists:
+
+                update_product_data(session,
+                                    integracion_id,
+                                    sku,
+                                    codigo_fab,
+                                    nombre_prod,
+                                    length,
+                                    height,
+                                    width,
+                                    weight,
+                                    category_id,
+                                    marca_id,
+                                    short_desc,
+                                    large_description)
+
+            else:
+
+                insert_new_product(session,
+                                   integracion_id,
+                                   sku,
+                                   codigo_fab,
+                                   nombre_prod,
+                                   length,
+                                   height,
+                                   width,
+                                   weight,
+                                   category_id,
+                                   marca_id,
+                                   short_desc,
+                                   large_description)
+
+        except SQLAlchemyError as error:
+            logger.exception('An exception was occurred while execute transactions: %s', error)
+            raise mvc_exc.ItemNotStored(
+                'Can\'t insert product SKU: "{}" with Integracion_Id "{}" because it\'s not stored in "{}"'.format(
+                    sku, integracion_id, ProductsTable.__tablename__
                 )
             )
         finally:
@@ -501,7 +734,13 @@ def get_config_constant_file():
 
     :rtype: object
     """
-    _constants_file = "/ofix/tienda_virtual/constants/constants.yml"
+
+    # TEST
+    _constants_file = "constants/constants.yml"
+
+    # PROD
+    # _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
+
     cfg = Const.get_constants_file(_constants_file)
 
     return cfg

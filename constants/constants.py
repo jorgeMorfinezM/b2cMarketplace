@@ -7,7 +7,7 @@ __author__ = "Jorge Morfinez Mojica (jorgemorfinez@ofix.mx)"
 __copyright__ = "Copyright 2019, Jorge Morfinez Mojica"
 __license__ = "Ofix S.A. de C.V."
 __history__ = """ """
-__version__ = "1.19.L06.Prod ($Rev: 1 $)"
+__version__ = "1.19.L20.Prod ($Rev: 1 $)"
 
 import yaml
 
