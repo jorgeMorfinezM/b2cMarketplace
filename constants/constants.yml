@@ -50,7 +50,7 @@ DB_COLUMNS_DATA:
     CATEGORY_ID: category_id
     MARCA_ID: marca_id
     SHORT_DESCRIPTION: short_description
-    DESCRIPCION_LARGA: descripcion_larga
+    DESCRIPCION_LARGA: DESCRIPCION_LARGA
   PRICES:
     SKU: sku
     STOCK_TOTAL: stock_total

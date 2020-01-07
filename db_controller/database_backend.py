@@ -246,10 +246,10 @@ class BrandTable(Base):
 
             brand_validation = validate_brand_exists(session, integration_id, brand_id)
 
-            logger.info('Brand stored on database: %s', brand_validation)
-
             # insert validation
             if brand_validation:
+
+                logger.info('Brand stored on database: %s', brand_validation)
 
                 # update method
                 update_brand(session, integration_id, brand_id, brand)
@@ -354,9 +354,9 @@ class CategoryTable(Base):
 
             category_exists = validate_category_exists(session, integration_id, category_id)
 
-            logger.info('Category stored on database: %s', category_exists)
-
             if category_exists:
+
+                logger.info('Category stored on database: %s', category_exists)
 
                 # update method
                 update_category_by_name(session, integration_id, category_id, category_name, parent_cat_id)
@@ -462,9 +462,9 @@ class PricesTable(Base):
 
             valid_product_price = validate_price_in_sku_exists(session, integration_id, sku)
 
-            logger.info('Price of product stored on database: %s', valid_product_price)
-
             if valid_product_price:
+
+                logger.info('Price of product stored on database: %s', valid_product_price)
 
                 update_product_price(session, integration_id, sku, stock_total, price, moneda, tipo_cambio)
 
@@ -569,6 +569,8 @@ def insert_new_product(session,
     user_id = cfg['DB_COL_DATA']['USER_ID']
     user_id_upd = cfg['DB_COL_DATA']['USER_ID']
 
+    # logger.info('Descripcion_Larga in Product: %s', str(large_description))
+
     new_product = ProductsTable(integracion_id=integration_id,
                                 sku=sku,
                                 nombre_producto=nombre_prod,
@@ -587,8 +589,10 @@ def insert_new_product(session,
 
     session.add(new_product)
 
+    # session.commit()
+
     # check insert correct
-    row_inserted = session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id).\
+    row_inserted = session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id). \
         filter(ProductsTable.sku == sku)
 
     for data_product in row_inserted:
@@ -597,8 +601,6 @@ def insert_new_product(session,
                                                'Cod. Fabricante: {}'.format(data_product.sku,
                                                                             data_product.nombre_producto,
                                                                             data_product.codigo_fabricante))
-
-    session.commit()
 
 
 class ProductsTable(Base):
@@ -643,9 +645,9 @@ class ProductsTable(Base):
 
             product_exists = validate_product_exists(session, integracion_id, sku)
 
-            logger.info('Product Integrator stored on database: %s', product_exists)
-
             if product_exists:
+
+                logger.info('Product Integrator stored on database: %s', product_exists)
 
                 update_product_data(session,
                                     integracion_id,
@@ -676,6 +678,8 @@ class ProductsTable(Base):
                                    marca_id,
                                    short_desc,
                                    large_description)
+
+                session.commit()
 
         except SQLAlchemyError as error:
             logger.exception('An exception was occurred while execute transactions: %s', error)

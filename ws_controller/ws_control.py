@@ -22,12 +22,12 @@ logger = configure_ws_logger()
 
 
 # CT Online: Consume el WS de CT: UTILERIAS - Volumetria
-def consume_ws_volumetria(sku_ct):
+def consume_ws_volumetria(oauth_token, sku_ct):
     pass
 
     cfg = get_config_constant_file()
 
-    oauth_token = parse_json_token_response()
+    # oauth_token = parse_json_token_response()
 
     api_url_master = cfg['CT_WS_URL_MASTER']['URL_WS_CT']
     api_url_operative = cfg['CT_WS_OPERATIVES']['UTILITIES_WS']['GET_DIMENSIONES_PROD']
@@ -56,13 +56,14 @@ def consume_ws_volumetria(sku_ct):
         try:
             response = requests.get(api_url, headers=headers, timeout=20)
 
+            response.raise_for_status()
         except requests.exceptions.Timeout:
             logger.exception("TimeOut in Utilities Volumetria WS resource: ", errt, exc_info=True)
             return
         return
     except requests.exceptions.RequestException as err:
         try:
-            response = requests.post(api_url, data=payload, headers={
+            response = requests.get(api_url, data=payload, headers={
                 'Content-Type': 'application/json',
                 'x-auth': oauth_token
             }, timeout=15)
@@ -77,12 +78,12 @@ def consume_ws_volumetria(sku_ct):
 
 
 # CT Online: Consume el WS de CT: UTILERIAS - Tipo de Cambio
-def consume_ws_tipo_cambio():
+def consume_ws_tipo_cambio(oauth_token):
     pass
 
     cfg = get_config_constant_file()
 
-    oauth_token = parse_json_token_response()
+    # oauth_token = parse_json_token_response()
 
     api_url_master = cfg['CT_WS_URL_MASTER']['URL_WS_CT']
     api_url_operative = cfg['CT_WS_OPERATIVES']['UTILITIES_WS']['GET_TIPO_CAMBIO']
@@ -96,7 +97,7 @@ def consume_ws_tipo_cambio():
 
     try:
 
-        response = requests.get(api_url, headers=headers, timeout=3)
+        response = requests.get(api_url, headers=headers, timeout=5)
         # response = requests.request("POST", api_url, data=params, headers=headers)
 
         # response.raise_for_status()
@@ -108,7 +109,7 @@ def consume_ws_tipo_cambio():
         return
     except requests.exceptions.Timeout as errt:
         try:
-            response = requests.request("GET", api_url, headers=headers, timeout=10)
+            response = requests.get(api_url, headers=headers, timeout=10)
 
             response.raise_for_status()
         except requests.exceptions.Timeout:
@@ -117,6 +118,7 @@ def consume_ws_tipo_cambio():
         return
     except requests.exceptions.RequestException as err:
         try:
+
             response = requests.get(api_url, headers={
                 'Content-Type': 'application/xml charset=utf-8',
                 'x-auth': oauth_token
@@ -132,12 +134,12 @@ def consume_ws_tipo_cambio():
 
 
 # CT Online : Consume el WS de CT: EXISTENCIAS - Articulo en Almacenes
-def consume_ws_existencias_todos_almacenes(sku_ct):
+def consume_ws_existencias_todos_almacenes(oauth_token, sku_ct):
     pass
 
     cfg = get_config_constant_file()
 
-    oauth_token = parse_json_token_response()
+    # oauth_token = parse_json_token_response()
 
     api_url_master = cfg['CT_WS_URL_MASTER']['URL_WS_CT']
     api_url_operative = cfg['CT_WS_OPERATIVES']['EXISTENCIAS_WS']['GET_PROD_X_ALM']
@@ -158,18 +160,14 @@ def consume_ws_existencias_todos_almacenes(sku_ct):
 
         # response.raise_for_status()
     except requests.exceptions.HTTPError as errh:
-        # response = errh
-        # logging.exception('HTTPError in AV_CUSTOMERS WS resource: %s', errh, exc_info=True)
         logger.exception('HTTPError in Existencias Todos_Almacenes WS resource: %s', errh, exc_info=True)
         return
     except requests.exceptions.ConnectionError as errc:
-        # response = errc
-        # logging.exception('ConnectionError in AV_CUSTOMERS WS resource: %s', errc, exc_info=True)
         logger.exception('ConnectionError in Existencias Todos_Almacenes WS resource: %s', errc, exc_info=True)
         return
     except requests.exceptions.Timeout as errt:
         try:
-            response = requests.request("GET", api_url, data=payload, headers=headers, timeout=10)
+            response = requests.get(api_url, data=payload, headers=headers, timeout=5)
 
             response.raise_for_status()
         except requests.exceptions.Timeout:
@@ -177,16 +175,13 @@ def consume_ws_existencias_todos_almacenes(sku_ct):
             return
     except requests.exceptions.RequestException as err:
         try:
-            response = requests.request("GET", api_url, data=payload, headers={
+            response = requests.get(api_url, data=payload, headers={
                 'Content-Type': 'application/json charset=utf-8',
                 'x-auth': oauth_token
             }, timeout=5)
-            # response = requests.post(api_url, data=params, headers=headers)
 
             response.raise_for_status()
         except requests.exceptions.ConnectionError:
-            # print("Connection Exception to Re Request to Avanttia CFD Encoded of Documents WS API: ", response)
-            # response = err
             logger.exception('RequestException in Existencias Todos_Almacenes WS resource: %s', err, exc_info=True)
             return
         return
@@ -195,12 +190,12 @@ def consume_ws_existencias_todos_almacenes(sku_ct):
 
 
 # CT Online : Consume el WS de CT: EXISTENCIAS - Articulo por Almacen
-def consume_ws_existencia_por_almacen(sku_ct, almacen_ct):
+def consume_ws_existencia_por_almacen(oauth_token, sku_ct, almacen_ct):
     pass
 
     cfg = get_config_constant_file()
 
-    oauth_token = parse_json_token_response()
+    # oauth_token = parse_json_token_response()
 
     api_url_master = cfg['CT_WS_URL_MASTER']['URL_WS_CT']
     api_url_operative = cfg['CT_WS_OPERATIVES']['EXISTENCIAS_WS']['GET_PROD_EN_ALM']
@@ -216,23 +211,19 @@ def consume_ws_existencia_por_almacen(sku_ct, almacen_ct):
 
     try:
 
-        response = requests.get(api_url, data=payload, headers=headers, timeout=3)
+        response = requests.get(api_url, data=payload, headers=headers, timeout=5)
         # response = requests.post(api_url, data=params, headers=headers)
 
         # response.raise_for_status()
     except requests.exceptions.HTTPError as errh:
-        # response = errh
-        # logging.exception('HTTPError in AV_CUSTOMERS WS resource: %s', errh, exc_info=True)
         logger.exception('HTTPError in Existencia Por_Almacen WS resource: %s', errh, exc_info=True)
         return
     except requests.exceptions.ConnectionError as errc:
-        # response = errc
-        # logging.exception('ConnectionError in AV_CUSTOMERS WS resource: %s', errc, exc_info=True)
         logger.exception('ConnectionError in Existencia Por_Almacen WS resource: %s', errc, exc_info=True)
         return
     except requests.exceptions.Timeout as errt:
         try:
-            response = requests.request("GET", api_url, data=payload, headers=headers, timeout=10)
+            response = requests.get(api_url, data=payload, headers=headers, timeout=10)
 
             response.raise_for_status()
         except requests.exceptions.Timeout:
@@ -240,16 +231,14 @@ def consume_ws_existencia_por_almacen(sku_ct, almacen_ct):
             return
     except requests.exceptions.RequestException as err:
         try:
-            response = requests.request("GET", api_url, data=payload, headers={
+
+            response = requests.get(api_url, data=payload, headers={
                 'Content-Type': 'application/json charset=utf-8',
                 'x-auth': oauth_token
             }, timeout=5)
-            # response = requests.post(api_url, data=params, headers=headers)
 
             response.raise_for_status()
         except requests.exceptions.ConnectionError:
-            # print("Connection Exception to Re Request to Avanttia CFD Encoded of Documents WS API: ", response)
-            # response = err
             logger.exception('RequestException in Existencia Por_Almacen WS resource: %s', err, exc_info=True)
             return
         return
@@ -258,12 +247,12 @@ def consume_ws_existencia_por_almacen(sku_ct, almacen_ct):
 
 
 # CT Online : Consume el WS de CT: EXISTENCIAS - Detalle por Almacen
-def consume_ws_existencia_detalle_almacen(sku_ct, almacen_ct):
+def consume_ws_existencia_detalle_almacen(oauth_token, sku_ct, almacen_ct):
     pass
 
     cfg = get_config_constant_file()
 
-    oauth_token = parse_json_token_response()
+    # oauth_token = parse_json_token_response()
 
     api_url_master = cfg['CT_WS_URL_MASTER']['URL_WS_CT']
     api_url_operative = cfg['CT_WS_OPERATIVES']['EXISTENCIAS_WS']['GET_DETALLE_ALM']
@@ -280,7 +269,6 @@ def consume_ws_existencia_detalle_almacen(sku_ct, almacen_ct):
     try:
 
         response = requests.get(api_url, headers=headers, timeout=15)
-        # response = requests.post(api_url, data=params, headers=headers)
 
         # response.raise_for_status()
     except requests.exceptions.HTTPError as errh:
@@ -288,21 +276,21 @@ def consume_ws_existencia_detalle_almacen(sku_ct, almacen_ct):
         return
     except requests.exceptions.ConnectionError as errc:
         logger.exception('ConnectionError in Existencia Detalle Por_Almacen WS resource: %s', errc, exc_info=True)
+        response.raise_for_status()
         return
     except requests.exceptions.Timeout as errt:
         try:
-            response = requests.request("GET", api_url, headers=headers, timeout=20)
+            response = requests.get(api_url, headers=headers, timeout=20)
 
         except requests.exceptions.Timeout:
             logger.exception('TimeOut in Existencia Detalle Por_Almacen WS resource: %s', errt, exc_info=True)
             return
     except requests.exceptions.RequestException as err:
         try:
-            response = requests.request("GET", api_url, headers={
+            response = requests.get(api_url, headers={
                 'Content-Type': 'application/json',
                 'x-auth': oauth_token
             }, timeout=15)
-            # response = requests.post(api_url, data=params, headers=headers)
 
             response.raise_for_status()
         except requests.exceptions.ConnectionError:
@@ -314,12 +302,12 @@ def consume_ws_existencia_detalle_almacen(sku_ct, almacen_ct):
 
 
 # CT Online : Consume el WS de CT: EXISTENCIAS - Sumatoria TOTAL
-def consume_ws_existencia_total(sku_ct):
+def consume_ws_existencia_total(oauth_token, sku_ct):
     pass
 
     cfg = get_config_constant_file()
 
-    oauth_token = parse_json_token_response()
+    # oauth_token = parse_json_token_response()
 
     api_url_master = cfg['CT_WS_URL_MASTER']['URL_WS_CT']
     api_url_operative = cfg['CT_WS_OPERATIVES']['EXISTENCIAS_WS']['GET_TOTAL_INV_PROD']
@@ -336,7 +324,6 @@ def consume_ws_existencia_total(sku_ct):
     try:
 
         response = requests.get(api_url, data=payload, headers=headers, timeout=3)
-        # response = requests.post(api_url, data=params, headers=headers)
 
         # response.raise_for_status()
     except requests.exceptions.HTTPError as errh:
@@ -347,7 +334,7 @@ def consume_ws_existencia_total(sku_ct):
         return
     except requests.exceptions.Timeout as errt:
         try:
-            response = requests.request("GET", api_url, data=payload, headers=headers, timeout=10)
+            response = requests.get(api_url, data=payload, headers=headers, timeout=10)
 
             response.raise_for_status()
         except requests.exceptions.Timeout:
@@ -355,11 +342,10 @@ def consume_ws_existencia_total(sku_ct):
             return
     except requests.exceptions.RequestException as err:
         try:
-            response = requests.request("GET", api_url, data=payload, headers={
+            response = requests.get(api_url, data=payload, headers={
                 'Content-Type': 'application/json charset=utf-8',
                 'x-auth': oauth_token
             }, timeout=5)
-            # response = requests.post(api_url, data=params, headers=headers)
 
             response.raise_for_status()
         except requests.exceptions.ConnectionError:
@@ -371,12 +357,12 @@ def consume_ws_existencia_total(sku_ct):
 
 
 # CT Online : Consume el WS de CT: EXISTENCIAS - Todas Promociones
-def consume_ws_promociones_general():
+def consume_ws_promociones_general(oauth_token):
     pass
 
     cfg = get_config_constant_file()
 
-    oauth_token = parse_json_token_response()
+    # oauth_token = parse_json_token_response()
 
     api_url_master = cfg['CT_WS_URL_MASTER']['URL_WS_CT']
     api_url_operative = cfg['CT_WS_OPERATIVES']['EXISTENCIAS_WS']['GET_PROMO_PRICE']
@@ -391,7 +377,6 @@ def consume_ws_promociones_general():
     try:
 
         response = requests.get(api_url, headers=headers, timeout=5)
-        # response = requests.post(api_url, data=params, headers=headers)
 
         # response.raise_for_status()
     except requests.exceptions.HTTPError as errh:
@@ -402,7 +387,7 @@ def consume_ws_promociones_general():
         return
     except requests.exceptions.Timeout as errt:
         try:
-            response = requests.request("GET", api_url, headers=headers, timeout=10)
+            response = requests.get(api_url, headers=headers, timeout=10)
 
             response.raise_for_status()
         except requests.exceptions.Timeout:
@@ -410,10 +395,11 @@ def consume_ws_promociones_general():
             return
     except requests.exceptions.RequestException as err:
         try:
-            response = requests.request("GET", api_url, headers={
+
+            response = requests.get(api_url, headers={
                 'Content-Type': 'application/json charset=utf-8',
                 'x-auth': oauth_token
-            }, timeout=6)
+            }, timeout=7)
 
             response.raise_for_status()
         except requests.exceptions.ConnectionError:
@@ -425,12 +411,12 @@ def consume_ws_promociones_general():
 
 
 # CT Online : Consume el WS de CT: EXISTENCIAS - Promociones por Producto
-def consume_ws_promociones_producto(sku_ct):
+def consume_ws_promociones_producto(oauth_token, sku_ct):
     pass
 
     cfg = get_config_constant_file()
 
-    oauth_token = parse_json_token_response()
+    # oauth_token = parse_json_token_response()
 
     api_url_master = cfg['CT_WS_URL_MASTER']['URL_WS_CT']
     api_url_operative = cfg['CT_WS_OPERATIVES']['EXISTENCIAS_WS']['GET_PROMO_PRICE_X_PROD']
@@ -447,7 +433,6 @@ def consume_ws_promociones_producto(sku_ct):
     try:
 
         response = requests.get(api_url, data=payload, headers=headers, timeout=6)
-        # response = requests.post(api_url, data=params, headers=headers)
 
         # response.raise_for_status()
     except requests.exceptions.HTTPError as errh:
@@ -458,7 +443,7 @@ def consume_ws_promociones_producto(sku_ct):
         return
     except requests.exceptions.Timeout as errt:
         try:
-            response = requests.request("GET", api_url, data=payload, headers=headers, timeout=10)
+            response = requests.get(api_url, data=payload, headers=headers, timeout=10)
 
             response.raise_for_status()
         except requests.exceptions.Timeout:
@@ -466,11 +451,11 @@ def consume_ws_promociones_producto(sku_ct):
             return
     except requests.exceptions.RequestException as err:
         try:
-            response = requests.request("GET", api_url, data=payload, headers={
+
+            response = requests.get(api_url, data=payload, headers={
                 'Content-Type': 'application/json charset=utf-8',
                 'x-auth': oauth_token
             }, timeout=8)
-            # response = requests.post(api_url, data=params, headers=headers)
 
             response.raise_for_status()
         except requests.exceptions.ConnectionError:

@@ -21,11 +21,19 @@ import re
 import os
 import argparse
 from ws_controller import ws_control
+from authentication.ws_auth import *
 from db_controller.database_backend import *
 from constants.constants import Constants as Const
 from logger_controller.logger_control import *
 
 logger = configure_logger()
+
+
+def get_token_auth_ws():
+
+    oauth_token = parse_json_token_response()
+
+    return oauth_token
 
 
 def update_all_products_integration(session):
@@ -191,7 +199,6 @@ def read_xml_from_file_to_parse(self):
         _data = _file.read()
         _file.close()
 
-    # byte_array = xml_docto_base64_encoded(_data.decode())
     return _data
 
 
@@ -221,16 +228,18 @@ def xml_products_layout_converter():
     return json_layout
 
 
-def get_tipo_cambio_ws(moneda):
+def get_tipo_cambio_ws(oauth_token, moneda):
+
     tipo_cambio = 1.0
 
     if str(moneda).find("MXN") == -1:
 
-        response = ws_control.consume_ws_tipo_cambio()
+        response = ws_control.consume_ws_tipo_cambio(oauth_token)
 
-        if str(response).find("HTTPConnectionPool") != -1 or response is None or str(response).find("HTTPError") != -1:
+        if response.content is not None:
 
-            if response.json() is not None and 'errorCode' in response.json():
+            if 'errorCode' in response.json():
+
                 json_response = response.json()
 
                 error_code = json_response['errorCode']
@@ -238,31 +247,33 @@ def get_tipo_cambio_ws(moneda):
 
                 logger.error('An error was occurred while request web service: %s',
                              'ErrorCode: "{}", ErrorMessage: "{}"'.format(error_code, error_message))
-            else:
-                logger.error('Error de Conexion al WS, intente mas tarde la Busqueda: %s', str(response))
+
+            elif response.json() is not None:
+
+                _status_code = response.status_code
+
+                logger.info('Status Response Object from Tipo_Cambio WS: %s', str(_status_code))
+
+                json_data = response.json()  # ESTE SI VA
+
+                if _status_code == 200:
+                    _text = response.text  # NO VA
+
+                    tipo_cambio = json_data['tipoCambio']
+
         else:
-
-            _status_code = response.status_code
-
-            logger.info('Status Response Object from Tipo_Cambio WS: %s', str(_status_code))
-
-            json_data = response.json()  # ESTE SI VA
-
-            if _status_code == 200:
-                _text = response.text  # NO VA
-
-                tipo_cambio = json_data['tipoCambio']
+            logger.error('Error de Conexion al WS, intente mas tarde la Busqueda: %s', str(response.content))
     else:
         tipo_cambio = 1
 
     return tipo_cambio
 
 
-def get_volumetria_producto(sku_ct):
+def get_volumetria_producto(oath_token, sku_ct):
 
     volumetria_producto = []
 
-    response = ws_control.consume_ws_volumetria(sku_ct)
+    response = ws_control.consume_ws_volumetria(oath_token, sku_ct)
 
     _status_code = response.status_code
 
@@ -340,13 +351,13 @@ def get_volumetria_producto(sku_ct):
     return volumetria_producto
 
 
-def get_request_promo_inventory_price_product(sku_ct, almacen_ct):
+def get_request_promo_inventory_price_product(oauth_token, sku_ct, almacen_ct):
 
     producto_detalle_data = {}
 
     detail_data_product = {}
 
-    response = ws_control.consume_ws_existencia_detalle_almacen(sku_ct, almacen_ct)
+    response = ws_control.consume_ws_existencia_detalle_almacen(oauth_token, sku_ct, almacen_ct)
 
     logger.info('Status Response Object from Existencia_Detalle_Producto CT WS: %s', str(response.status_code))
 
@@ -426,6 +437,8 @@ def parser_products_integration():
 
     cfg = get_config_constant_file()
 
+    oauth_token_ws = get_token_auth_ws()
+
     json_layout_prod = xml_products_layout_converter()
 
     articulos_rows = json_layout_prod["Articulo"]["Producto"]
@@ -442,6 +455,8 @@ def parser_products_integration():
     lista_datos_productos = []
 
     integrador_id = cfg['INTEGRACION_SOURCES']['INTEGRATION_ID']
+
+    vendor_id = cfg['INTEGRACION_SOURCES']['VENDOR_ID']
 
     for producto in articulos:
 
@@ -467,7 +482,7 @@ def parser_products_integration():
         _moneda = '{}'.format(productos_json['moneda'])
         _tipo_cambio = '{}'.format(productos_json['tipo_cambio'])
 
-        data_detailed_product = get_request_promo_inventory_price_product(_sku_producto, id_almacen_ct)
+        data_detailed_product = get_request_promo_inventory_price_product(oauth_token_ws, _sku_producto, id_almacen_ct)
 
         logger.info('Data Detailed Products: %s', data_detailed_product)
 
@@ -482,9 +497,9 @@ def parser_products_integration():
         precio_detalle_producto = data_product_detailed["precio"]
         moneda_detalle_producto = data_product_detailed["moneda"]
 
-        tipo_cambio_moneda = get_tipo_cambio_ws(moneda_detalle_producto)
+        tipo_cambio_moneda = get_tipo_cambio_ws(oauth_token_ws, moneda_detalle_producto)
 
-        tipo_cambio_descto = get_tipo_cambio_ws(moneda_detalle_producto)
+        # tipo_cambio_descto = get_tipo_cambio_ws(oauth_token_ws, moneda_detalle_producto)
 
         # promociones_product = data_product_detailed["promociones"]
 
@@ -529,13 +544,13 @@ def parser_products_integration():
 
                 if int(porcentaje_descto_promo) > 0:
 
-                    descuento = ((porcentaje_descto_promo / 100) * precio_detalle_producto) * tipo_cambio_descto
+                    descuento = ((porcentaje_descto_promo / 100) * precio_detalle_producto) * tipo_cambio_moneda
 
                 elif int(precio_descto_promo) > 0:
-                    descuento = tipo_cambio_descto * precio_descto_promo
+                    descuento = tipo_cambio_moneda * precio_descto_promo
 
                 elif int(cantidad_descto_promo):
-                    descuento = tipo_cambio_descto * cantidad_descto_promo
+                    descuento = tipo_cambio_moneda * cantidad_descto_promo
 
                 else:
                     descuento = 0
@@ -556,7 +571,7 @@ def parser_products_integration():
                                                                                          existencia_producto))
 
         # Obtiene la volumetria del producto CT:
-        volumetria_producto = get_volumetria_producto(_sku_producto)
+        volumetria_producto = get_volumetria_producto(oauth_token_ws, _sku_producto)
 
         if len(volumetria_producto) != 0:
 
@@ -600,6 +615,8 @@ def parser_products_integration():
 
             descripcion_larga = ' '
 
+            descripcion_larga += '|* Modelo: ' + _modelo
+
             if 'especificacion' in productos_json:
 
                 especificaciones = productos_json['especificacion']
@@ -615,11 +632,11 @@ def parser_products_integration():
 
                     # _espec_value = _espec_value.encode('utf-8')
 
-                    descripcion_larga += '|* Modelo: ' + _modelo + '|* ' + \
-                                         scrub_data(_espec_type) + ': ' + scrub_data(_espec_value)
+                    descripcion_larga += '|* ' + scrub_data(_espec_type) + ': ' + scrub_data(_espec_value)
 
                     especs_counter = especs_counter + 1
 
+                '''
                 lista_datos_productos += [{
                     "Producto": {
                         "Num_Producto": contador_productos,
@@ -644,6 +661,7 @@ def parser_products_integration():
                         }
                     }
                 }]
+                '''
 
                 logger.info('Descripcion_Larga Producto: %s', str(descripcion_larga))
 
@@ -659,13 +677,12 @@ def parser_products_integration():
                                                      _id_categoria,
                                                      _id_marca,
                                                      _descripcion_corta_prodcuto,
-                                                     scrub_data(descripcion_larga))
+                                                     descripcion_larga)
 
             else:
 
-                descripcion_larga = '|* Modelo: ' + _modelo
-
                 # continue
+                '''
                 lista_datos_productos += [{
                     "Producto": {
                         "Num_Producto": contador_productos,
@@ -690,6 +707,7 @@ def parser_products_integration():
                         }
                     }
                 }]
+                '''
 
                 logger.info('Descripcion_Larga Producto: %s', str(descripcion_larga))
 
@@ -705,10 +723,43 @@ def parser_products_integration():
                                                      _id_categoria,
                                                      _id_marca,
                                                      _descripcion_corta_prodcuto,
-                                                     scrub_data(descripcion_larga))
+                                                     descripcion_larga)
 
+        except SQLAlchemyError as error:
+            raise mvc_exc.ConnectionError(
+                'An exception was occurred while execute transactions:\nOriginal Exception raised: {}'.format(
+                    error
+                )
+            )
         finally:
             session.close()
+
+        lista_datos_productos += [{
+            "Producto": {
+                # "Num_Producto": contador_productos,
+                "SKU": _sku_producto,
+                # "Nombre": _nombre_producto,
+                # "Id_Marca": _id_marca,
+                # "Marca": _marca,
+                # "Descripcion_Corta": _descripcion_corta_prodcuto,
+                # "Descripcion_Larga": descripcion_larga,
+                # "Categoria_Id": _id_categoria,
+                # "Categoria": _nombre_categoria,
+                # "SubCategoria_Id": _id_subcategoria,
+                # "SubCategoria": _nombre_subcategoria,
+                "Imagen": _imagen_producto,
+                "Integrador_Id": integrador_id,
+                "Vendor_Id": vendor_id
+                # "Inventario": existencia_producto,
+                # "Precio": precio_final_producto,
+                # "Volumetria": {
+                #    "Weight": weight,
+                #    "Length": length,
+                #    "Height": height,
+                #    "Width": width
+                # }
+            }
+        }]
 
         # else:
         #    continue
@@ -765,8 +816,6 @@ def scrub_data(self):
     self = self.replace("Ò".lower(), "O".lower())
     self = self.replace("Ù".lower(), "U".lower())
 
-    # --
-
     self = self.replace("Ä", "A")
     self = self.replace("Ë", "E")
     self = self.replace("Ï", "I")
@@ -802,7 +851,9 @@ def scrub_data(self):
 
     self = self.replace("m²", "m2")
 
-    # _str_converted = re.sub(r"[^\w\W\d\D]*[]\W]*", "", self)
+    self = self.replace("°", "grados ​")
+
+    _str_converted = re.sub(r"[^a-z A-Z0-9+-,./_%*:;(){}[\]]", "", self)
 
     _str_converted = self
 
