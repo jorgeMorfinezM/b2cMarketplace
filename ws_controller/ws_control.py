@@ -268,35 +268,61 @@ def consume_ws_existencia_detalle_almacen(oauth_token, sku_ct, almacen_ct):
 
     try:
 
-        response = requests.get(api_url, headers=headers, timeout=15)
+        response = requests.get(api_url, headers=headers, timeout=30)
 
-        # response.raise_for_status()
+        json_data = response.json()
+
+        if str(response).find("HTTPConnectionPool") != -1 or response is None or str(response).find("HTTPError") != -1 \
+                or 'errorCode' in json_data:
+
+            logger.error('Error de Conexion al WS, intente mas tarde la Busqueda: %s', str(response.text))
+
+            error_code = json_data['errorCode']
+            error_message = json_data['errorMessage']
+
+            logger.error('Retry: An error was occurred while request web service: %s',
+                         'ErrorCode: "{}", ErrorMessage: "{}"'.format(error_code, error_message))
+
+            if int(error_code) == 4011:
+
+                auth_token_ws = get_token_auth_ws()
+
+                response = requests.get(api_url, headers={
+                    'Content-Type': 'application/json',
+                    'x-auth': auth_token_ws
+                }, timeout=20)
+
+    # response.raise_for_status()
     except requests.exceptions.HTTPError as errh:
         logger.exception('HTTPError in Existencia Detalle Por_Almacen WS resource: %s', errh, exc_info=True)
-        return
+        response = 'HTTPError'
+        return response
     except requests.exceptions.ConnectionError as errc:
         logger.exception('ConnectionError in Existencia Detalle Por_Almacen WS resource: %s', errc, exc_info=True)
-        response.raise_for_status()
-        return
+        # response.raise_for_status()
+        response = 'ConnectionError'
+        return response
     except requests.exceptions.Timeout as errt:
         try:
-            response = requests.get(api_url, headers=headers, timeout=20)
+            response = requests.get(api_url, headers=headers, timeout=40)
 
         except requests.exceptions.Timeout:
             logger.exception('TimeOut in Existencia Detalle Por_Almacen WS resource: %s', errt, exc_info=True)
-            return
+            response = 'TimeOut'
+            return response
     except requests.exceptions.RequestException as err:
         try:
             response = requests.get(api_url, headers={
                 'Content-Type': 'application/json',
                 'x-auth': oauth_token
-            }, timeout=15)
+            }, timeout=50)
 
-            response.raise_for_status()
+            # response.raise_for_status()
         except requests.exceptions.ConnectionError:
             logger.exception('RequestException in Existencia Detalle Por_Almacen WS resource: %s', err, exc_info=True)
-            return
-        return
+            response = 'RequestException'
+            return response
+        return response
 
     return response
 

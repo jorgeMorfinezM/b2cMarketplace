@@ -76,6 +76,8 @@ def connect_to_db():
 
     data_bd_connection = init_connection_data()
 
+    session = None
+
     try:
 
         if data_bd_connection[0] is not None and data_bd_connection[1] is not None \
@@ -91,12 +93,19 @@ def connect_to_db():
 
             engine = create_engine(URL(**db_url))
             
-            # create session
+            # create session - SI
             Session = sessionmaker()
             
             Session.configure(bind=engine)
             
             session = Session()
+
+            # another kind of connect to DB:
+            # Session = sessionmaker(bind=engine)
+
+            # conn = engine.connect()
+
+            # session = Session(bind=conn)
             
         else:
             logger.error('Some data is not established to connect Oracle DB. Please verify it!')
@@ -569,8 +578,6 @@ def insert_new_product(session,
     user_id = cfg['DB_COL_DATA']['USER_ID']
     user_id_upd = cfg['DB_COL_DATA']['USER_ID']
 
-    # logger.info('Descripcion_Larga in Product: %s', str(large_description))
-
     new_product = ProductsTable(integracion_id=integration_id,
                                 sku=sku,
                                 nombre_producto=nombre_prod,
@@ -589,18 +596,7 @@ def insert_new_product(session,
 
     session.add(new_product)
 
-    # session.commit()
-
-    # check insert correct
-    row_inserted = session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id). \
-        filter(ProductsTable.sku == sku)
-
-    for data_product in row_inserted:
-        logger.info('Product inserted is: %s', 'SKU: {}, '
-                                               'Nombre: {}, '
-                                               'Cod. Fabricante: {}'.format(data_product.sku,
-                                                                            data_product.nombre_producto,
-                                                                            data_product.codigo_fabricante))
+    session.commit()
 
 
 class ProductsTable(Base):
@@ -647,7 +643,7 @@ class ProductsTable(Base):
 
             if product_exists:
 
-                logger.info('Product Integrator stored on database: %s', product_exists)
+                # logger.info('Product Integrator stored on database: %s', product_exists)
 
                 update_product_data(session,
                                     integracion_id,
@@ -679,9 +675,16 @@ class ProductsTable(Base):
                                    short_desc,
                                    large_description)
 
-                session.commit()
+                # product_inserted = validate_product_exists(session, integracion_id, sku)
+
+                logger.info('Product Inserted: %s', 'SKU: {}; '
+                                                    'Producto: {}, '
+                                                    'Descripcion_Larga: {}'.format(sku,
+                                                                                   nombre_prod,
+                                                                                   large_description))
 
         except SQLAlchemyError as error:
+            session.rollback()
             logger.exception('An exception was occurred while execute transactions: %s', error)
             raise mvc_exc.ItemNotStored(
                 'Can\'t insert product SKU: "{}" with Integracion_Id "{}" because it\'s not stored in "{}"'.format(
