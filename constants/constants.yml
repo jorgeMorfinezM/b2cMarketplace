@@ -25,6 +25,7 @@ DB_ORACLE_OBJECTS:
   INT_CATEGORIES: 'tv_int_categorias_ofix_v'
   INT_PRODUCTS: 'tv_int_productos_ofix_v'
   INT_PRICES: 'tv_int_precios_ofix_v'
+  INT_HIST_PRICES: 'tv_int_precios_hist_ofix'
 
 DB_COLUMNS_DATA:
   INTEGRATION_ID: integracion_id
@@ -57,6 +58,12 @@ DB_COLUMNS_DATA:
     PRECIO: precio
     MONEDA: moneda
     TIPO_CAMBIO: tipo_cambio
+  PRICES_HIST:
+    SKU: sku
+    STOCK_TOTAL: stock_total
+    PRECIO: precio
+    TIPO_CAMBIO: tipo_cambio
+    MONEDA: moneda
 
 DB_COL_DATA:
   USER_ID: '1059'
@@ -107,4 +114,5 @@ LOG_RESOURCE:
 
 PATH_LAYOUT_PRODUCTS_CT: '/ofix/tienda_virtual/layouts/integraciones'
 NAME_LAYOUT_PRODUCTS_CT: 'productos.xml'
-PATH_LAYOUT_PRODUCTS_TEST: '/resources/'
+PATH_LAYOUT_PRODUCTS_TEST: 'resources/'
+NAME_LAYOUT_IMAGES_CT: 'json_products_images.json'

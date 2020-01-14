@@ -188,6 +188,33 @@ def manage_productos_integrador_database(session,
     #    session.close()
 
 
+def manage_history_prices_database(session, integracion_id, sku, stock_total, precio, tipo_cambio, moneda):
+
+    database_cnx_data = []
+
+    try:
+
+        database_cnx_data = init_connection_data()
+
+        logger.info('History Price inserted/updated in database: %s',
+                    'SKU: {}, Stock_Total: {}, Price: {}'.format(sku, stock_total, precio))
+
+        HistoryPrices.manage_history_prices_database(session,
+                                                     integracion_id,
+                                                     sku,
+                                                     stock_total,
+                                                     precio,
+                                                     tipo_cambio,
+                                                     moneda)
+
+    except SQLAlchemyError as error:
+        raise mvc_exc.ConnectionError(
+            '"{}@{}" Can\'t connect to database, verify data connection to "{}".\nOriginal Exception raised: {}'.format(
+                database_cnx_data[1], database_cnx_data[0], database_cnx_data[4], error
+            )
+        )
+
+
 # Metodo para leer un XML desde un archivo almacenado en cualquier directorio:
 def read_xml_from_file_to_parse(self):
     pass
@@ -212,7 +239,13 @@ def xml_products_layout_converter():
     # NOT USE IT: file_name = '/ofix/tienda_virtual/layouts/integraciones/productos.xml'
 
     # TEST - Localhost
-    file_name = 'resources/productos.xml'
+
+    path_layout = cfg['PATH_LAYOUT_PRODUCTS_TEST']
+    name_layout = cfg['NAME_LAYOUT_PRODUCTS_CT']
+
+    # file_name = 'resources/productos.xml'
+
+    file_name = path_layout + name_layout
 
     # PROD
     # file_name = cfg['PATH_LAYOUT_PRODUCTS_CT']['NAME_LAYOUT_PRODUCTS_CT']
@@ -277,7 +310,7 @@ def get_volumetria_producto(oath_token, sku_ct):
 
     _status_code = response.status_code
 
-    logger.info('Status Response Object from Tipo_Cambio WS: %s', str(response.status_code))
+    logger.info('Status Response Object from Volumetria WS: %s', str(response.status_code))
 
     json_data = response.json()
 
@@ -451,7 +484,6 @@ def get_request_promo_inventory_price_product(oauth_token, sku_ct, almacen_ct):
 
             # detail_data_product = json.dumps(producto_detalle_data)
 
-
     detail_data_product = json.dumps(producto_detalle_data)
 
     return detail_data_product
@@ -486,6 +518,9 @@ def parser_products_integration():
     vendor_id = cfg['INTEGRACION_SOURCES']['VENDOR_ID']
 
     tipo_cambio_moneda = get_tipo_cambio_ws(oauth_token_ws)
+
+    # Actualiza todos los estatus de los productos del integrador CT:
+    update_all_products_integration(session)
 
     for producto in articulos:
 
@@ -548,268 +583,269 @@ def parser_products_integration():
 
                 existencia_producto = data_product_detailed["existencia"]
 
-                logger.info('Product Inventory: %s', 'SKU: "{}", Inventory: "{}"'.format(str(_sku_producto),
-                                                                                         str(existencia_producto)))
+                if int(existencia_producto) > 1:
 
-                logger.info('Producto en Integrador CT: %s',
-                            'SKU: "{}" - "{}", Inventario Total Suc[35A-DFA]: "{} == {}"'.format(_sku_producto,
-                                                                                                 _nombre_producto,
-                                                                                                 _inventory_35a,
-                                                                                                 existencia_producto))
+                    logger.info('Product Inventory: %s', 'SKU: "{}", Inventory: "{}"'.format(str(_sku_producto),
+                                                                                             str(existencia_producto)))
 
-                precio_detalle_producto = data_product_detailed["precio"]
-                moneda_detalle_producto = data_product_detailed["moneda"]
+                    logger.info('Producto en Integrador CT: %s',
+                                'SKU: "{}" - "{}", Inventario Total Suc[35A-DFA]: "{} == {}"'.format(_sku_producto,
+                                                                                                     _nombre_producto,
+                                                                                                     _inventory_35a,
+                                                                                                     existencia_producto))
 
-                logger.info('Promociones: %s', 'Tamanio_Promos_aplica: {}, Promos: {}'.format(
-                    str(len(data_product_detailed["promociones"])), data_product_detailed["promociones"]))
+                    precio_detalle_producto = data_product_detailed["precio"]
+                    moneda_detalle_producto = data_product_detailed["moneda"]
 
-                if moneda_detalle_producto is not None:
-                    moneda_producto = moneda_detalle_producto
-                elif _moneda is not None:
-                    moneda_producto = _moneda
+                    logger.info('Promociones: %s', 'Tamanio_Promos_aplica: {}, Promos: {}'.format(
+                        str(len(data_product_detailed["promociones"])), data_product_detailed["promociones"]))
 
-                if str(moneda_producto).find("MXN") != -1:
-                    tipo_cambio = 1.0
-                else:
-                    tipo_cambio = tipo_cambio_moneda
+                    if moneda_detalle_producto is not None:
+                        moneda_producto = moneda_detalle_producto
+                    elif _moneda is not None:
+                        moneda_producto = _moneda
 
-                if data_product_detailed["promociones"] is None or \
-                        str(data_product_detailed["promociones"]).find("[]") != -1 \
-                        or len(data_product_detailed["promociones"]) == 0:
-
-                    descuento = 0
-
-                else:
-                    fecha_inicio_promo = data_product_detailed['promociones']['fecha_inicio']
-                    fecha_fin_promo = data_product_detailed['promociones']['fecha_fin']
-                    cantidad_descto_promo = data_product_detailed['promociones']['cantidad_descto_promo']
-                    precio_descto_promo = data_product_detailed['promociones']['precio_descuento']
-                    porcentaje_descto_promo = data_product_detailed['promociones']['porcentaje_descuento']
-
-                    today_date_now = datetime.datetime.now()
-
-                    extrae_fecha_inicio_promo = fecha_inicio_promo.split("T")
-
-                    fecha_inicial_promo = extrae_fecha_inicio_promo[0]
-
-                    extrae_fecha_fin_promo = fecha_fin_promo.split("T")
-
-                    fecha_final_promo = extrae_fecha_fin_promo[0]
-
-                    vigencia_inicio_promo = datetime.datetime.strptime(fecha_inicial_promo, "%Y-%m-%d")
-
-                    vigencia_fin_promo = datetime.datetime.strptime(fecha_final_promo, "%Y-%m-%d")
-
-                    logger.info('Aplica Vigencia de la promocion por producto: %s', 'Fecha Inicio Promo: "{}", '
-                                                                                    'Fecha Final Promo: "{}", '
-                                                                                    'Fecha Actual: "{}"'
-                                .format(str(vigencia_inicio_promo), str(vigencia_fin_promo), str(today_date_now)))
-
-                    if vigencia_fin_promo >= today_date_now >= vigencia_inicio_promo:
-
-                        if int(porcentaje_descto_promo) > 0:
-
-                            descuento = ((porcentaje_descto_promo / 100) * precio_detalle_producto) * tipo_cambio
-
-                        elif int(precio_descto_promo) > 0:
-
-                            descuento = tipo_cambio * precio_descto_promo
-
-                        elif int(cantidad_descto_promo):
-
-                            descuento = tipo_cambio * cantidad_descto_promo
-
-                        else:
-                            descuento = 0
+                    if str(moneda_producto).find("MXN") == -1:
+                        tipo_cambio = tipo_cambio_moneda
                     else:
+                        tipo_cambio = 1.0
+
+                    if data_product_detailed["promociones"] is None or \
+                            str(data_product_detailed["promociones"]).find("[]") != -1 \
+                            or len(data_product_detailed["promociones"]) == 0:
 
                         descuento = 0
 
-                precio_final_producto = decimal_formatting((precio_detalle_producto * tipo_cambio_moneda) - descuento)
-
-                try:
-
-                    # Actualiza todos los estatus de los productos del integrador CT:
-                    update_all_products_integration(session)
-
-                    # Realiza transacciones con datos de Marcas para cada producto:
-                    manage_marcas_database(session, integrador_id, _id_marca, _marca)
-
-                    # Realiza transacciones con datos en Categorias para cada productos y cada categoria:
-                    if int(_id_categoria) < int(_id_subcategoria):
-
-                        manage_categorias_database(session, integrador_id, _id_categoria, '0', _nombre_categoria)
                     else:
+                        fecha_inicio_promo = data_product_detailed['promociones']['fecha_inicio']
+                        fecha_fin_promo = data_product_detailed['promociones']['fecha_fin']
+                        cantidad_descto_promo = data_product_detailed['promociones']['cantidad_descto_promo']
+                        precio_descto_promo = data_product_detailed['promociones']['precio_descuento']
+                        porcentaje_descto_promo = data_product_detailed['promociones']['porcentaje_descuento']
 
-                        manage_categorias_database(session,
-                                                   integrador_id,
-                                                   _id_subcategoria,
-                                                   _id_categoria,
-                                                   _nombre_subcategoria)
+                        today_date_now = datetime.datetime.now()
 
-                    manage_precios_productos_database(session,
-                                                      integrador_id,
-                                                      _sku_producto,
-                                                      existencia_producto,
-                                                      precio_final_producto,
-                                                      moneda_producto,
-                                                      tipo_cambio)
+                        extrae_fecha_inicio_promo = fecha_inicio_promo.split("T")
 
-                    especs_counter = 1
+                        fecha_inicial_promo = extrae_fecha_inicio_promo[0]
 
-                    descripcion_larga = '|* Modelo: ' + _modelo
+                        extrae_fecha_fin_promo = fecha_fin_promo.split("T")
 
-                    if 'especificacion' in productos_json:
+                        fecha_final_promo = extrae_fecha_fin_promo[0]
 
-                        especificaciones = productos_json['especificacion']
+                        vigencia_inicio_promo = datetime.datetime.strptime(fecha_inicial_promo, "%Y-%m-%d")
 
-                        espects_d = json.dumps(especificaciones)
-                        espects_l = json.loads(espects_d)
+                        vigencia_fin_promo = datetime.datetime.strptime(fecha_final_promo, "%Y-%m-%d")
 
-                        logger.info('LEN Especificaciones: %s', str(len(espects_l)))
+                        logger.info('Aplica Vigencia de la promocion por producto: %s', 'Fecha Inicio Promo: "{}", '
+                                                                                        'Fecha Final Promo: "{}", '
+                                                                                        'Fecha Actual: "{}"'
+                                    .format(str(vigencia_inicio_promo), str(vigencia_fin_promo), str(today_date_now)))
 
-                        while especs_counter <= len(espects_l):
-                            _espec_value = '{}'.format(espects_l['caracteristica' + str(especs_counter)]['valor'])
-                            _espec_type = '{}'.format(espects_l['caracteristica' + str(especs_counter)]['tipo'])
+                        if vigencia_fin_promo >= today_date_now >= vigencia_inicio_promo:
 
-                            # _espec_value = _espec_value.encode('utf-8')
+                            if int(porcentaje_descto_promo) > 0:
 
-                            desc_type = scrub_data(_espec_type)
-                            desc_value = scrub_data(_espec_value)
+                                descuento = ((porcentaje_descto_promo / 100) * precio_detalle_producto) * tipo_cambio
 
-                            descripcion_larga += '|* ' + str(desc_type) + ': ' + str(desc_value)
+                            elif int(precio_descto_promo) > 0:
 
-                            especs_counter = especs_counter + 1
+                                descuento = tipo_cambio * precio_descto_promo
 
-                        '''
-                        lista_datos_productos += [{
-                            "Producto": {
-                                "Num_Producto": contador_productos,
-                                "SKU": _sku_producto,
-                                "Nombre": _nombre_producto,
-                                "Id_Marca": _id_marca,
-                                "Marca": _marca,
-                                "Descripcion_Corta": _descripcion_corta_prodcuto,
-                                "Descripcion_Larga": descripcion_larga,
-                                "Categoria_Id": _id_categoria,
-                                "Categoria": _nombre_categoria,
-                                "SubCategoria_Id": _id_subcategoria,
-                                "SubCategoria": _nombre_subcategoria,
-                                "Imagen": _imagen_producto,
-                                "Inventario": existencia_producto,
-                                "Precio": precio_final_producto,
-                                "Volumetria": {
-                                    "Weight": weight,
-                                    "Length": length,
-                                    "Height": height,
-                                    "Width": width
+                            # elif int(cantidad_descto_promo):
+
+                            #    descuento = tipo_cambio * cantidad_descto_promo
+
+                            else:
+                                descuento = 0
+                        else:
+
+                            descuento = 0
+
+                    precio_final_producto = decimal_formatting((precio_detalle_producto * tipo_cambio) - descuento)
+
+                    try:
+
+                        # Realiza transacciones con datos de Marcas para cada producto:
+                        manage_marcas_database(session, integrador_id, _id_marca, _marca)
+
+                        # Realiza transacciones con datos en Categorias para cada productos y cada categoria:
+                        if int(_id_categoria) < int(_id_subcategoria):
+
+                            manage_categorias_database(session, integrador_id, _id_categoria, '0', _nombre_categoria)
+                        else:
+
+                            manage_categorias_database(session,
+                                                       integrador_id,
+                                                       _id_subcategoria,
+                                                       _id_categoria,
+                                                       _nombre_subcategoria)
+
+                        manage_precios_productos_database(session,
+                                                          integrador_id,
+                                                          _sku_producto,
+                                                          existencia_producto,
+                                                          precio_final_producto,
+                                                          moneda_producto,
+                                                          tipo_cambio)
+
+                        especs_counter = 1
+
+                        descripcion_larga = '|* Modelo: ' + _modelo
+
+                        if 'especificacion' in productos_json:
+
+                            especificaciones = productos_json['especificacion']
+
+                            espects_d = json.dumps(especificaciones)
+                            espects_l = json.loads(espects_d)
+
+                            logger.info('LEN Especificaciones: %s', str(len(espects_l)))
+
+                            while especs_counter <= len(espects_l):
+                                _espec_value = '{}'.format(espects_l['caracteristica' + str(especs_counter)]['valor'])
+                                _espec_type = '{}'.format(espects_l['caracteristica' + str(especs_counter)]['tipo'])
+
+                                # _espec_value = _espec_value.encode('utf-8')
+
+                                desc_type = scrub_data(_espec_type)
+                                desc_value = scrub_data(_espec_value)
+
+                                descripcion_larga += '|* ' + str(desc_type) + ': ' + str(desc_value)
+
+                                especs_counter = especs_counter + 1
+
+                            '''
+                            lista_datos_productos += [{
+                                "Producto": {
+                                    "Num_Producto": contador_productos,
+                                    "SKU": _sku_producto,
+                                    "Nombre": _nombre_producto,
+                                    "Id_Marca": _id_marca,
+                                    "Marca": _marca,
+                                    "Descripcion_Corta": _descripcion_corta_prodcuto,
+                                    "Descripcion_Larga": descripcion_larga,
+                                    "Categoria_Id": _id_categoria,
+                                    "Categoria": _nombre_categoria,
+                                    "SubCategoria_Id": _id_subcategoria,
+                                    "SubCategoria": _nombre_subcategoria,
+                                    "Imagen": _imagen_producto,
+                                    "Inventario": existencia_producto,
+                                    "Precio": precio_final_producto,
+                                    "Volumetria": {
+                                        "Weight": weight,
+                                        "Length": length,
+                                        "Height": height,
+                                        "Width": width
+                                    }
                                 }
-                            }
-                        }]
-                        '''
+                            }]
+                            '''
 
-                        logger.info('Descripcion_Larga Producto: %s', str(descripcion_larga))
+                            logger.info('Descripcion_Larga Producto: %s', str(descripcion_larga))
 
-                        manage_productos_integrador_database(session,
-                                                             integrador_id,
-                                                             _sku_producto,
-                                                             _codigo_fabricante,
-                                                             _nombre_producto,
-                                                             length,
-                                                             height,
-                                                             width,
-                                                             weight,
-                                                             _id_categoria,
-                                                             _id_marca,
-                                                             _descripcion_corta_prodcuto,
-                                                             descripcion_larga)
+                            manage_productos_integrador_database(session,
+                                                                 integrador_id,
+                                                                 _sku_producto,
+                                                                 _codigo_fabricante,
+                                                                 _nombre_producto,
+                                                                 length,
+                                                                 height,
+                                                                 width,
+                                                                 weight,
+                                                                 _id_categoria,
+                                                                 _id_marca,
+                                                                 _descripcion_corta_prodcuto,
+                                                                 descripcion_larga)
 
-                        # session.commit()
+                            # session.commit()
 
-                    else:
+                        else:
 
-                        # continue
-                        '''
-                        lista_datos_productos += [{
-                            "Producto": {
-                                "Num_Producto": contador_productos,
-                                "SKU": _sku_producto,
-                                "Nombre": _nombre_producto,
-                                "Id_Marca": _id_marca,
-                                "Marca": _marca,
-                                "Descripcion_Corta": _descripcion_corta_prodcuto,
-                                "Descripcion_Larga": descripcion_larga,
-                                "Categoria_Id": _id_categoria,
-                                "Categoria": _nombre_categoria,
-                                "SubCategoria_Id": _id_subcategoria,
-                                "SubCategoria": _nombre_subcategoria,
-                                "Imagen": _imagen_producto,
-                                "Inventario": existencia_producto,
-                                "Precio": precio_final_producto,
-                                "Volumetria": {
-                                    "Weight": weight,
-                                    "Length": length,
-                                    "Height": height,
-                                    "Width": width
+                            # continue
+                            '''
+                            lista_datos_productos += [{
+                                "Producto": {
+                                    "Num_Producto": contador_productos,
+                                    "SKU": _sku_producto,
+                                    "Nombre": _nombre_producto,
+                                    "Id_Marca": _id_marca,
+                                    "Marca": _marca,
+                                    "Descripcion_Corta": _descripcion_corta_prodcuto,
+                                    "Descripcion_Larga": descripcion_larga,
+                                    "Categoria_Id": _id_categoria,
+                                    "Categoria": _nombre_categoria,
+                                    "SubCategoria_Id": _id_subcategoria,
+                                    "SubCategoria": _nombre_subcategoria,
+                                    "Imagen": _imagen_producto,
+                                    "Inventario": existencia_producto,
+                                    "Precio": precio_final_producto,
+                                    "Volumetria": {
+                                        "Weight": weight,
+                                        "Length": length,
+                                        "Height": height,
+                                        "Width": width
+                                    }
                                 }
-                            }
-                        }]
-                        '''
+                            }]
+                            '''
 
-                        logger.info('Descripcion_Larga Producto: %s', str(descripcion_larga))
+                            logger.info('Descripcion_Larga Producto: %s', str(descripcion_larga))
 
-                        manage_productos_integrador_database(session,
-                                                             integrador_id,
-                                                             _sku_producto,
-                                                             _codigo_fabricante,
-                                                             _nombre_producto,
-                                                             length,
-                                                             height,
-                                                             width,
-                                                             weight,
-                                                             _id_categoria,
-                                                             _id_marca,
-                                                             _descripcion_corta_prodcuto,
-                                                             descripcion_larga)
+                            manage_productos_integrador_database(session,
+                                                                 integrador_id,
+                                                                 _sku_producto,
+                                                                 _codigo_fabricante,
+                                                                 _nombre_producto,
+                                                                 length,
+                                                                 height,
+                                                                 width,
+                                                                 weight,
+                                                                 _id_categoria,
+                                                                 _id_marca,
+                                                                 _descripcion_corta_prodcuto,
+                                                                 descripcion_larga)
 
-                        # session.commit()
+                            # session.commit()
 
-                except SQLAlchemyError as error:
-                    session.rollback()
-                    raise mvc_exc.ConnectionError(
-                        'An exception was occurred while execute transactions:\nOriginal Exception raised: {}'.format(
-                            error
+                    except SQLAlchemyError as error:
+                        session.rollback()
+                        raise mvc_exc.ConnectionError(
+                            'An exception was occurred while execute transactions:\nOriginal Exception raised: {}'.format(
+                                error
+                            )
                         )
-                    )
-                finally:
-                    session.close()
+                    finally:
+                        session.close()
 
-                lista_datos_productos += [{
-                    "Producto": {
-                        # "Num_Producto": contador_productos,
-                        "SKU": _sku_producto,
-                        # "Nombre": _nombre_producto,
-                        # "Id_Marca": _id_marca,
-                        # "Marca": _marca,
-                        # "Descripcion_Corta": _descripcion_corta_prodcuto,
-                        # "Descripcion_Larga": descripcion_larga,
-                        # "Categoria_Id": _id_categoria,
-                        # "Categoria": _nombre_categoria,
-                        # "SubCategoria_Id": _id_subcategoria,
-                        # "SubCategoria": _nombre_subcategoria,
-                        "Imagen": _imagen_producto,
-                        "Integrador_Id": integrador_id,
-                        "Vendor_Id": vendor_id
-                        # "Inventario": existencia_producto,
-                        # "Precio": precio_final_producto,
-                        # "Volumetria": {
-                        #    "Weight": weight,
-                        #    "Length": length,
-                        #    "Height": height,
-                        #    "Width": width
-                        # }
-                    }
-                }]
+                    lista_datos_productos += [{
+                        "Producto": {
+                            # "Num_Producto": contador_productos,
+                            "SKU": _sku_producto,
+                            # "Nombre": _nombre_producto,
+                            # "Id_Marca": _id_marca,
+                            # "Marca": _marca,
+                            # "Descripcion_Corta": _descripcion_corta_prodcuto,
+                            # "Descripcion_Larga": descripcion_larga,
+                            # "Categoria_Id": _id_categoria,
+                            # "Categoria": _nombre_categoria,
+                            # "SubCategoria_Id": _id_subcategoria,
+                            # "SubCategoria": _nombre_subcategoria,
+                            "Imagen": _imagen_producto,
+                            "Integrador_Id": integrador_id,
+                            "Vendor_Id": vendor_id
+                            # "Inventario": existencia_producto,
+                            # "Precio": precio_final_producto,
+                            # "Volumetria": {
+                            #    "Weight": weight,
+                            #    "Length": length,
+                            #    "Height": height,
+                            #    "Width": width
+                            # }
+                        }
+                    }]
+                else:
+                    continue
 
             else:
                 continue
@@ -948,7 +984,18 @@ def write_json_products_log(json_products):
 
 
 def write_json_products_parsed(json_parsed):
-    with codecs.open('logs/json_products_images.json', 'w', 'utf-8-sig') as outfile:
+
+    today_date_now = datetime.datetime.now()
+
+    cfg = get_config_constant_file()
+
+    layout_path_dir = cfg['PATH_LAYOUT_PRODUCTS_TEST']
+    layout_path_name = cfg['NAME_LAYOUT_IMAGES_CT']
+
+    images_layout = layout_path_dir + layout_path_name + '_' + str(today_date_now)
+
+    # with codecs.open('logs/json_products_images.json', 'w', 'utf-8-sig') as outfile:
+    with codecs.open(images_layout, 'w', 'utf-8-sig') as outfile:
         json.dump(json_parsed, outfile)
 
 

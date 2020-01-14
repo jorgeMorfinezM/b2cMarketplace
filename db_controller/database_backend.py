@@ -477,6 +477,14 @@ class PricesTable(Base):
 
                 update_product_price(session, integration_id, sku, stock_total, price, moneda, tipo_cambio)
 
+                HistoryPrices.manage_history_prices_database(session,
+                                                             integration_id,
+                                                             sku,
+                                                             stock_total,
+                                                             price,
+                                                             tipo_cambio,
+                                                             moneda)
+
             else:
 
                 insert_new_product_price(session, integration_id, sku, stock_total, price, moneda, tipo_cambio)
@@ -552,7 +560,8 @@ def update_product_data(session,
                                                  "descripcion_corta": short_desc,
                                                  "descripcion_larga": long_description,
                                                  "last_updated_by": user_id_upd,
-                                                 "last_update_date": last_update_date},
+                                                 "last_update_date": last_update_date,
+                                                 "status": status},
                                                 synchronize_session='fetch')
 
     session.commit()
@@ -577,6 +586,7 @@ def insert_new_product(session,
     last_update_date = get_systimestamp_date(session)
     user_id = cfg['DB_COL_DATA']['USER_ID']
     user_id_upd = cfg['DB_COL_DATA']['USER_ID']
+    status = cfg['DB_COL_DATA']['STATUS_ACTIVO']
 
     new_product = ProductsTable(integracion_id=integration_id,
                                 sku=sku,
@@ -592,7 +602,8 @@ def insert_new_product(session,
                                 descripcion_larga=large_description,
                                 created_by=user_id,
                                 last_updated_by=user_id_upd,
-                                last_update_date=last_update_date)
+                                last_update_date=last_update_date,
+                                status=status)
 
     session.add(new_product)
 
@@ -691,6 +702,66 @@ class ProductsTable(Base):
                     sku, integracion_id, ProductsTable.__tablename__
                 )
             )
+        finally:
+            session.close()
+
+
+def insert_new_price_history(session,
+                             integration_id,
+                             sku,
+                             stock_total,
+                             precio,
+                             tipo_cambio,
+                             moneda):
+
+    cfg = get_config_constant_file()
+
+    # last_update_date = get_systimestamp_date(session)
+    user_id = cfg['DB_COL_DATA']['USER_ID']
+    # user_id_upd = cfg['DB_COL_DATA']['USER_ID']
+
+    new_price = HistoryPrices(integracion_id=integration_id,
+                              sku=sku,
+                              stock_total=stock_total,
+                              precio=precio,
+                              created_by=user_id,
+                              tipo_cambio=tipo_cambio,
+                              moneda=moneda)
+
+    session.add(new_price)
+
+    session.commit()
+
+
+class HistoryPrices(Base):
+    cfg = get_config_constant_file()
+
+    __tablename__ = cfg['DB_ORACLE_OBJECTS']['INT_HIST_PRICES']
+
+    integracion_id = Column(cfg['DB_COLUMNS_DATA']['INTEGRATION_ID'], Integer, primary_key=True)
+    sku = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['SKU'], String)
+    stock_total = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['STOCK_TOTAL'], Integer)
+    precio = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['PRECIO'], Numeric)
+    created_by = Column(cfg['DB_COLUMNS_DATA']['USER_ID'], Integer)
+    tipo_cambio = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['TIPO_CAMBIO'], Numeric)
+    moneda = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['MONEDA'], String)
+
+    def manage_history_prices_database(self, integracion_id, sku, stock_total, precio, tipo_cambio, moneda):
+
+        try:
+            session = self
+
+            insert_new_price_history(session,
+                                     integracion_id,
+                                     sku,
+                                     stock_total,
+                                     precio,
+                                     tipo_cambio,
+                                     moneda)
+
+        except SQLAlchemyError as error:
+            session.rollback()
+            logger.exception('An exception was occurred while execute transactions: %s', error)
         finally:
             session.close()
 

@@ -270,6 +270,7 @@ def consume_ws_existencia_detalle_almacen(oauth_token, sku_ct, almacen_ct):
 
         response = requests.get(api_url, headers=headers, timeout=30)
 
+        '''
         json_data = response.json()
 
         if str(response).find("HTTPConnectionPool") != -1 or response is None or str(response).find("HTTPError") != -1 \
@@ -291,6 +292,7 @@ def consume_ws_existencia_detalle_almacen(oauth_token, sku_ct, almacen_ct):
                     'Content-Type': 'application/json',
                     'x-auth': auth_token_ws
                 }, timeout=20)
+        '''
 
     # response.raise_for_status()
     except requests.exceptions.HTTPError as errh:
