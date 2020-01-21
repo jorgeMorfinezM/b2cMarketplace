@@ -987,12 +987,17 @@ def write_json_products_parsed(json_parsed):
 
     today_date_now = datetime.datetime.now()
 
+    extrae_fecha = str(today_date_now).split(" ")
+
+    fecha_layout = extrae_fecha[0]
+
     cfg = get_config_constant_file()
 
     layout_path_dir = cfg['PATH_LAYOUT_PRODUCTS_TEST']
     layout_path_name = cfg['NAME_LAYOUT_IMAGES_CT']
+    layout_extencion_name = cfg['EXT_LAYOUT_IMAGES_CT']
 
-    images_layout = layout_path_dir + layout_path_name + '_' + str(today_date_now)
+    images_layout = layout_path_dir + layout_path_name + '_' + str(fecha_layout) + '.json'
 
     # with codecs.open('logs/json_products_images.json', 'w', 'utf-8-sig') as outfile:
     with codecs.open(images_layout, 'w', 'utf-8-sig') as outfile:

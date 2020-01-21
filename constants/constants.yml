@@ -115,4 +115,5 @@ LOG_RESOURCE:
 PATH_LAYOUT_PRODUCTS_CT: '/ofix/tienda_virtual/layouts/integraciones'
 NAME_LAYOUT_PRODUCTS_CT: 'productos.xml'
 PATH_LAYOUT_PRODUCTS_TEST: 'resources/'
-NAME_LAYOUT_IMAGES_CT: 'json_products_images.json'
+NAME_LAYOUT_IMAGES_CT: 'json_products_images'
+EXT_LAYOUT_IMAGES_CT: '.json'
