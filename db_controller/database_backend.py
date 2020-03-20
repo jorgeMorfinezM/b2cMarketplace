@@ -32,16 +32,23 @@ logger = configure_db_logger()
 
 
 def init_connection_data():
-
     init_cnx_db_data = []
 
     cfg = get_config_constant_file()
 
-    db_host = cfg['DB_ORACLE_TEST']['HOST_DB_TEST']
-    db_username = cfg['DB_ORACLE_TEST']['USER_DB_TEST']
-    db_password = cfg['DB_ORACLE_TEST']['PASSWORD_DB_TEST']
-    db_port = cfg['DB_ORACLE_TEST']['PORT_DB_TEST']
-    db_driver = cfg['DB_ORACLE_TEST']['SQL_DRIVER']
+    # TEST:
+    # db_host = cfg['DB_ORACLE_TEST']['HOST_DB_TEST']
+    # db_username = cfg['DB_ORACLE_TEST']['USER_DB_TEST']
+    # db_password = cfg['DB_ORACLE_TEST']['PASSWORD_DB_TEST']
+    # db_port = cfg['DB_ORACLE_TEST']['PORT_DB_TEST']
+    # db_driver = cfg['DB_ORACLE_TEST']['SQL_DRIVER']
+
+    # DB PROD:
+    db_host = cfg['DB_ORACLE_PROD']['HOST_DB']
+    db_username = cfg['DB_ORACLE_PROD']['USER_DB']
+    db_password = cfg['DB_ORACLE_PROD']['PASSWORD_DB']
+    db_port = cfg['DB_ORACLE_PROD']['PORT_DB']
+    db_driver = cfg['DB_ORACLE_PROD']['SQL_DRIVER']
 
     data_connection = [db_host, db_username, db_password, db_port, db_driver]
 
@@ -60,7 +67,7 @@ def connect_to_db():
 
     Parameters
     ----------
-    hosts : str
+    host : str
     password : str
     username : str
     port : str
@@ -81,7 +88,7 @@ def connect_to_db():
     try:
 
         if data_bd_connection[0] is not None and data_bd_connection[1] is not None \
-           and data_bd_connection[4] is not None:
+                and data_bd_connection[4] is not None:
 
             db_url = {
                 'drivername': data_bd_connection[4],
@@ -92,12 +99,12 @@ def connect_to_db():
             }
 
             engine = create_engine(URL(**db_url))
-            
+
             # create session - SI
             Session = sessionmaker()
-            
+
             Session.configure(bind=engine)
-            
+
             session = Session()
 
             # another kind of connect to DB:
@@ -106,7 +113,7 @@ def connect_to_db():
             # conn = engine.connect()
 
             # session = Session(bind=conn)
-            
+
         else:
             logger.error('Some data is not established to connect Oracle DB. Please verify it!')
 
@@ -143,7 +150,6 @@ def disconnect_from_db(session):
 
 
 def get_systimestamp_date(session):
-
     last_updated_date_column = session.execute('SELECT systimestamp from dual').scalar()
 
     logger.info('Timestamp from DUAL: %s', last_updated_date_column)
@@ -151,8 +157,8 @@ def get_systimestamp_date(session):
     return last_updated_date_column
 
 
+# noinspection SqlInjection
 def exists_data_row(session, table_name, column_name, column_filter1, value1, column_filter2, value2):
-
     value1 = scrub(value1)
     value2 = scrub(value2)
 
@@ -165,7 +171,7 @@ def exists_data_row(session, table_name, column_name, column_filter1, value1, co
 
     sql_exists = 'SELECT {} FROM {} WHERE {} = {} AND {} = {}'.format(column_name, table_name,
                                                                       column_filter1, value1,
-                                                                      column_filter2, "'"+value2+"'")
+                                                                      column_filter2, "'" + value2 + "'")
 
     row_exists = session.execute(sql_exists).scalar()
 
@@ -178,8 +184,7 @@ def exists_data_row(session, table_name, column_name, column_filter1, value1, co
 
 
 def validate_brand_exists(session, integration_id, brand_id):
-
-    brand_validation = session.query(BrandTable).filter(BrandTable.integracion_id == integration_id).\
+    brand_validation = session.query(BrandTable).filter(BrandTable.integracion_id == integration_id). \
         filter(BrandTable.marca_id == brand_id).scalar()
 
     logger.info('Datos a validar Marca almacenada en BD: %s', 'Integracion_Id: {}, Marca_Id: {}'.format(integration_id,
@@ -189,17 +194,16 @@ def validate_brand_exists(session, integration_id, brand_id):
 
 
 def update_brand(session, integration_id, brand_id, brand):
-
     last_update_date = get_systimestamp_date(session)
 
     # update row to database
-    session.query(BrandTable).filter(BrandTable.integracion_id == integration_id).\
+    session.query(BrandTable).filter(BrandTable.integracion_id == integration_id). \
         filter(BrandTable.marca_id == brand_id).update({"brand": brand,
                                                         "last_update_date": last_update_date},
                                                        synchronize_session='fetch')
 
     # check update correct
-    row = session.query(BrandTable).filter(BrandTable.integracion_id == integration_id).\
+    row = session.query(BrandTable).filter(BrandTable.integracion_id == integration_id). \
         filter(BrandTable.marca_id == brand_id).first()
 
     logger.info('Brand Updated: %s', row.brand)
@@ -208,7 +212,6 @@ def update_brand(session, integration_id, brand_id, brand):
 
 
 def insert_new_brand(session, integration_id, brand_id, brand):
-
     cfg = get_config_constant_file()
 
     last_update_date = get_systimestamp_date(session)
@@ -224,7 +227,7 @@ def insert_new_brand(session, integration_id, brand_id, brand):
     session.add(new_brand)
 
     # check insert correct
-    row_inserted = session.query(BrandTable).filter(BrandTable.integracion_id == integration_id).\
+    row_inserted = session.query(BrandTable).filter(BrandTable.integracion_id == integration_id). \
         filter(BrandTable.marca_id == brand_id)
 
     for data_brand in row_inserted:
@@ -235,7 +238,6 @@ def insert_new_brand(session, integration_id, brand_id, brand):
 
 
 class BrandTable(Base):
-
     cfg = get_config_constant_file()
 
     __tablename__ = cfg['DB_ORACLE_OBJECTS']['INT_MARCAS']
@@ -279,7 +281,6 @@ class BrandTable(Base):
 
 
 def validate_category_exists(session, integration_id, category_id):
-
     category_validation = session.query(CategoryTable).filter(CategoryTable.integracion_id == integration_id). \
         filter(CategoryTable.category_id == category_id).scalar()
 
@@ -290,11 +291,10 @@ def validate_category_exists(session, integration_id, category_id):
 
 
 def update_category_by_name(session, integration_id, category_id, category_name, parent_id):
-
     last_update_date = get_systimestamp_date(session)
 
     # update row to database
-    session.query(CategoryTable).filter(CategoryTable.integracion_id == integration_id).\
+    session.query(CategoryTable).filter(CategoryTable.integracion_id == integration_id). \
         filter(CategoryTable.category_id == category_id).update({"category": category_name,
                                                                  "last_update_date": last_update_date,
                                                                  "parent_id": parent_id},
@@ -311,7 +311,6 @@ def update_category_by_name(session, integration_id, category_id, category_name,
 
 
 def insert_new_category(session, integration_id, category_id, category_name, parent_id):
-
     cfg = get_config_constant_file()
 
     last_update_date = get_systimestamp_date(session)
@@ -330,7 +329,7 @@ def insert_new_category(session, integration_id, category_id, category_name, par
     session.add(new_category)
 
     # check insert correct
-    row_inserted = session.query(CategoryTable).filter(CategoryTable.integracion_id == integration_id).\
+    row_inserted = session.query(CategoryTable).filter(CategoryTable.integracion_id == integration_id). \
         filter(CategoryTable.category_id == category_id)
 
     for data_category in row_inserted:
@@ -342,7 +341,6 @@ def insert_new_category(session, integration_id, category_id, category_name, par
 
 
 class CategoryTable(Base):
-
     cfg = get_config_constant_file()
 
     __tablename__ = cfg['DB_ORACLE_OBJECTS']['INT_CATEGORIES']
@@ -388,19 +386,17 @@ class CategoryTable(Base):
 
 
 def validate_price_in_sku_exists(session, integration_id, sku):
-
-    price_validation = session.query(PricesTable).filter(PricesTable.integracion_id == integration_id).\
+    price_validation = session.query(PricesTable).filter(PricesTable.integracion_id == integration_id). \
         filter(PricesTable.sku == sku).scalar()
 
     return price_validation
 
 
 def update_product_price(session, integration_id, sku, stock_total, precio, moneda, tipo_cambio):
-
     last_update_date = get_systimestamp_date(session)
 
     # update row to database
-    session.query(PricesTable).filter(PricesTable.integracion_id == integration_id).\
+    session.query(PricesTable).filter(PricesTable.integracion_id == integration_id). \
         filter(PricesTable.sku == sku).update({"stock_total": stock_total,
                                                "precio": precio,
                                                "moneda": moneda,
@@ -409,11 +405,23 @@ def update_product_price(session, integration_id, sku, stock_total, precio, mone
                                               synchronize_session='fetch')
 
     # check update correct
-    row = session.query(PricesTable).filter(PricesTable.integracion_id == integration_id).\
+    row = session.query(PricesTable).filter(PricesTable.integracion_id == integration_id). \
         filter(PricesTable.sku == sku).first()
 
-    logger.info('Price Updated: %s', 'SKU -> {}, Precio -> {}, Stock_Total -> {}'.format(row.sku, row.precio,
-                                                                                         row.stock_total))
+    logger.info('Producto Updated Price: %s',
+                'Stock_Total: {}, Precio: {}, Moneda: {}, Tipo_Cambio: {}, '
+                'Last_Update_Date: {}'.format(stock_total,
+                                              precio,
+                                              moneda,
+                                              tipo_cambio,
+                                              str(last_update_date)))
+
+    logger.info('Price Updated: %s',
+                'SKU -> {}, Precio -> {}, Stock_Total -> {}, Moneda -> {}, Tipo_Cambio -> {}'.format(row.sku,
+                                                                                                     row.precio,
+                                                                                                     row.stock_total,
+                                                                                                     row.moneda,
+                                                                                                     row.tipo_cambio))
 
     session.commit()
 
@@ -438,7 +446,7 @@ def insert_new_product_price(session, integration_id, sku, stock_total, precio, 
     session.add(new_product_price)
 
     # check insert correct
-    row_inserted = session.query(PricesTable).filter(PricesTable.integracion_id == integration_id).\
+    row_inserted = session.query(PricesTable).filter(PricesTable.integracion_id == integration_id). \
         filter(PricesTable.sku == sku)
 
     for data_price in row_inserted:
@@ -450,7 +458,6 @@ def insert_new_product_price(session, integration_id, sku, stock_total, precio, 
 
 
 class PricesTable(Base):
-
     cfg = get_config_constant_file()
 
     __tablename__ = cfg['DB_ORACLE_OBJECTS']['INT_PRICES']
@@ -469,15 +476,32 @@ class PricesTable(Base):
         try:
             session = self
 
+            price_history = HistoryPrices()
+
             valid_product_price = validate_price_in_sku_exists(session, integration_id, sku)
 
             if valid_product_price:
 
                 logger.info('Price of product stored on database: %s', valid_product_price)
 
+                logger.info('Producto Updated Price: %s',
+                            'Integracion_Id: {}, '
+                            'Sku: {}, '
+                            'Stock_Total: {}, '
+                            'Precio: {}, '
+                            'Moneda: {}, '
+                            'Tipo_Cambio: {}'.format(integration_id,
+                                                     sku,
+                                                     stock_total,
+                                                     price,
+                                                     moneda,
+                                                     tipo_cambio))
+
                 update_product_price(session, integration_id, sku, stock_total, price, moneda, tipo_cambio)
 
-                HistoryPrices.manage_history_prices_database(session,
+                session2 = connect_to_db()
+
+                price_history.manage_history_prices_database(session2,
                                                              integration_id,
                                                              sku,
                                                              stock_total,
@@ -501,7 +525,6 @@ class PricesTable(Base):
 
 
 def update_all_products_status(session):
-
     cfg = get_config_constant_file()
 
     last_update_date = get_systimestamp_date(session)
@@ -511,7 +534,7 @@ def update_all_products_status(session):
     integration_id = int(cfg['INTEGRACION_SOURCES']['INTEGRATION_ID'])
 
     # update row to database
-    session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id).\
+    session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id). \
         filter(ProductsTable.status != status).update({"status": status,
                                                        "last_updated_by": user_id_upd,
                                                        "last_update_date": last_update_date},
@@ -521,7 +544,7 @@ def update_all_products_status(session):
 
 
 def validate_product_exists(session, integration_id, sku):
-    product_validation = session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id).\
+    product_validation = session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id). \
         filter(ProductsTable.sku == sku).scalar()
 
     return product_validation
@@ -540,7 +563,6 @@ def update_product_data(session,
                         marca_id,
                         short_desc,
                         long_description):
-
     cfg = get_config_constant_file()
 
     last_update_date = get_systimestamp_date(session)
@@ -548,7 +570,7 @@ def update_product_data(session,
     user_id_upd = cfg['DB_COL_DATA']['USER_ID']
     status = cfg['DB_COL_DATA']['STATUS_ACTIVO']
 
-    session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id).\
+    session.query(ProductsTable).filter(ProductsTable.integracion_id == integration_id). \
         filter(ProductsTable.sku == sku).update({"codigo_fabricante": codigo_fab,
                                                  "nombre_producto": nombre_prod,
                                                  "length": length,
@@ -580,7 +602,6 @@ def insert_new_product(session,
                        marca_id,
                        short_desc,
                        large_description):
-
     cfg = get_config_constant_file()
 
     last_update_date = get_systimestamp_date(session)
@@ -611,7 +632,6 @@ def insert_new_product(session,
 
 
 class ProductsTable(Base):
-
     cfg = get_config_constant_file()
 
     __tablename__ = cfg['DB_ORACLE_OBJECTS']['INT_PRODUCTS']
@@ -743,13 +763,29 @@ class HistoryPrices(Base):
     stock_total = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['STOCK_TOTAL'], Integer)
     precio = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['PRECIO'], Numeric)
     created_by = Column(cfg['DB_COLUMNS_DATA']['USER_ID'], Integer)
-    tipo_cambio = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['TIPO_CAMBIO'], Numeric)
+    tipo_cambio = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['TIPO_CAMBIO'], Integer)
     moneda = Column(cfg['DB_COLUMNS_DATA']['PRICES_HIST']['MONEDA'], String)
 
-    def manage_history_prices_database(self, integracion_id, sku, stock_total, precio, tipo_cambio, moneda):
+    def manage_history_prices_database(self, session2, integracion_id, sku, stock_total, precio, tipo_cambio, moneda):
+
+        session = None
 
         try:
-            session = self
+
+            session = session2
+
+            logger.info('Producto Updated Price: %s',
+                        'Integracion_Id: {}, '
+                        'Sku: {}, '  
+                        'Stock_Total: {}, '
+                        'Precio: {}, '
+                        'Moneda: {}, '
+                        'Tipo_Cambio: {}'.format(integracion_id,
+                                                 sku,
+                                                 stock_total,
+                                                 precio,
+                                                 moneda,
+                                                 tipo_cambio))
 
             insert_new_price_history(session,
                                      integracion_id,
@@ -768,7 +804,6 @@ class HistoryPrices(Base):
 
 # DO NOT USE IT
 def select_all_by_filter(session, table_name, table_name2, column_filter, value_filter):
-
     value_filter = scrub(value_filter)
 
     # table_name = tv_int_productos_ofix_v
@@ -777,12 +812,15 @@ def select_all_by_filter(session, table_name, table_name2, column_filter, value_
     # value_filter = 150
 
     try:
-        sql = "SELECT * FROM {} " \
-              "WHERE EXISTS (SELECT * " \
-              "              FROM {} " \
-              "              WHERE tv_int_productos_ofix_v.marca_id = tv_int_marcas_ofix_v.marca_id) " \
-              "AND status = 'ACTIVO' " \
-              "and vender = 'SI' and {} = {}".format(table_name, table_name2, column_filter, value_filter)
+
+        sql = ("SELECT * FROM %(table_name)s "
+               "WHERE EXISTS (SELECT * "
+               "              FROM %(table_name2)s "
+               "              WHERE tv_int_productos_ofix_v.marca_id = tv_int_marcas_ofix_v.marca_id) "
+               "AND status = 'ACTIVO' "
+               "and vender = 'SI' and %(column_filter)s' = %(value_filter)s'",
+               dict(table_name=table_name, table_name2=table_name2, column_filter=column_filter,
+                    value_filter=value_filter))
 
         result = session.execute(sql)
 
@@ -814,12 +852,11 @@ def get_config_constant_file():
     """
 
     # TEST
-    _constants_file = "constants/constants.yml"
+    # _constants_file = "constants/constants.yml"
 
     # PROD
-    # _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
+    _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
 
     cfg = Const.get_constants_file(_constants_file)
 
     return cfg
-

@@ -20,11 +20,14 @@ class Constants:
             with open(self, 'r') as ymlfile:
                 cfg = yaml.safe_load(ymlfile)
 
+        except yaml.MarkedYAMLError as mye:
+            raise yaml.MarkedYAMLError(
+                'Your settings file(s) contain invalid YAML syntax! Please fix and restart!, {}'.format(str(mye))
+            )
         except yaml.YAMLError as exc:
             print("Error in configuration file:", exc)
-        except yaml.MarkedYAMLError as mye:
-            raise yaml.ImproperlyConfigured(
-                'Your settings file(s) contain invalid YAML syntax! Please fix and restart!, {}'.format(str(mye))
+            raise yaml.YAMLError(
+                'Your settings file(s) contain invalid YAML syntax! Please fix and restart!, {}'.format(str(exc))
             )
 
         return cfg

@@ -14,13 +14,43 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from constants.constants import Constants as Const
+
+# port = 465  # For SSL
+# smtp_server = "smtp.gmail.com"
+# sender_email = "monitoreo-ti@ofix.mx"
+# receiver_email = "ti@ofix.mx"
+# password = "Y*0am1%Oidfo9jYYVod&"
 
 
-port = 465  # For SSL
-smtp_server = "smtp.gmail.com"
-sender_email = "monitoreo-ti@ofix.mx"
-receiver_email = "ti@ofix.mx"
-password = "Y*0am1%Oidfo9jYYVod&"
+# Define y obtiene el configurador para las constantes del sistema:
+def get_config_constant_file():
+    """
+        Contiene la obtencion del objeto config
+        para setear datos de constantes en archivo
+        configurador
+
+    :rtype: object
+    """
+
+    # TEST
+    _constants_file = "constants/constants.yml"
+
+    # PROD
+    # _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
+
+    cfg = Const.get_constants_file(_constants_file)
+
+    return cfg
+
+
+cfg = get_config_constant_file()
+
+port = cfg['EMAIL_SETTINGS']['PORT']
+smtp_server = cfg['EMAIL_SETTINGS']['SMTP_SERVER']
+sender_email = cfg['EMAIL_SETTINGS']['SENDER_EMAIL']
+receiver_email = cfg['EMAIL_SETTINGS']['RECEIVER_EMAIL']
+password = cfg['EMAIL_SETTINGS']['PASSWORD']
 
 message = MIMEMultipart("alternative")
 message["Subject"] = "Python Multipart Email Test"

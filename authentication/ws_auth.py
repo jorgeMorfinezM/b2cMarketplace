@@ -12,7 +12,6 @@ __version__ = "1.19.L20.Prod ($Rev: 3 $)"
 import requests
 import urllib3
 from logger_controller.logger_control import *
-import xmltodict
 import json
 from constants.constants import Constants as Const
 
@@ -23,8 +22,6 @@ logger = configure_ws_logger()
 # WS que obtiene el Token de OAuth para conectar a los WS:
 def consume_ct_token():
     pass
-
-    http = urllib3.PoolManager()
 
     cfg = get_config_constant_file()
 

@@ -8,7 +8,7 @@ import errno
 import logging
 import os
 import sys
-from constants.constants import Constants as const
+from constants.constants import Constants as Const
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 
@@ -247,6 +247,6 @@ def get_config_constant_file():
 
     # PROD
     # _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
-    cfg = const.get_constants_file(_constants_file)
+    cfg = Const.get_constants_file(_constants_file)
 
     return cfg
