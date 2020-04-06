@@ -53,6 +53,8 @@ DB_COLUMNS_DATA:
     MARCA_ID: marca_id
     SHORT_DESCRIPTION: short_description
     DESCRIPCION_LARGA: DESCRIPCION_LARGA
+    URL_MEDIA: media_url
+    DESCRIPCION_PRODUCTO: DESCRIPCION_PRODUCTO
   PRICES:
     SKU: sku
     STOCK_TOTAL: stock_total
@@ -100,8 +102,8 @@ CT_WS_URL_MASTER:
 INTEGRACION_SOURCES:
   INTEGRATION_ID: 2
   VENDOR_ID: 4
-  INVENTARIO_ALM_CT: []DFA, HMO]
-  SUCURSAL_CT: [AZCAPOTZALCO, HERMOSILLO]
+  INVENTARIO_ALM_CT: DFA
+  SUCURSAL_CT: AZCAPOTZALCO
   # ID_INVENTARIO_CT: [35A, 01A] # Cuando se agreguen ambos, pero la consulta debe ser almacen por almacen
   ID_INVENTARIO_CT: 35A
 
@@ -111,8 +113,8 @@ LOG_RESOURCE:
   WS_FILE_LOG_NAME: 'app_ws_'
   DB_FILE_LOG_NAME: 'app_db_'
   APP_FILE_LOG_NAME: 'app_'
-  DIRECTORY_LOG_FILES: '../parserCt/logs/'
-  # DIRECTORY_LOG_FILES: '../getProductsInt/logs/' # TEST
+  # DIRECTORY_LOG_FILES: '../parserCt/logs/'
+  DIRECTORY_LOG_FILES: '../getProductsInt/logs/' # TEST
 
 PATH_LAYOUT_PRODUCTS_CT: '/ofix/tienda_virtual/layouts/integraciones/'
 NAME_LAYOUT_PRODUCTS_CT: 'productos.xml'

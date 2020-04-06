@@ -243,7 +243,8 @@ def get_config_constant_file():
     """
 
     # TEST
-    _constants_file = "constants/constants.yml"
+    _constants_file = "/home/jorge/Documents/Projects/tecnofinLayouts/projects/PaginaB2COFIXNORMAL/integrators/" \
+                      "ct_online/getProductsInt/constants/constants.yml"
 
     # PROD
     # _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"

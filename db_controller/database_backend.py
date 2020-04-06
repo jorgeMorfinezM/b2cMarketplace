@@ -562,7 +562,10 @@ def update_product_data(session,
                         category_id,
                         marca_id,
                         short_desc,
-                        long_description):
+                        long_description,
+                        url_media,
+                        description_producto):
+
     cfg = get_config_constant_file()
 
     last_update_date = get_systimestamp_date(session)
@@ -583,7 +586,9 @@ def update_product_data(session,
                                                  "descripcion_larga": long_description,
                                                  "last_updated_by": user_id_upd,
                                                  "last_update_date": last_update_date,
-                                                 "status": status},
+                                                 "status": status,
+                                                 "media_url": url_media,
+                                                 "description_producto": description_producto},
                                                 synchronize_session='fetch')
 
     session.commit()
@@ -601,7 +606,10 @@ def insert_new_product(session,
                        category_id,
                        marca_id,
                        short_desc,
-                       large_description):
+                       large_description,
+                       url_media,
+                       description_producto):
+
     cfg = get_config_constant_file()
 
     last_update_date = get_systimestamp_date(session)
@@ -624,7 +632,9 @@ def insert_new_product(session,
                                 created_by=user_id,
                                 last_updated_by=user_id_upd,
                                 last_update_date=last_update_date,
-                                status=status)
+                                status=status,
+                                media_url=url_media,
+                                description_producto=description_producto)
 
     session.add(new_product)
 
@@ -650,8 +660,10 @@ class ProductsTable(Base):
     status = Column(cfg['DB_COLUMNS_DATA']['STATUS'], String)
     category_id = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['CATEGORY_ID'], String)
     marca_id = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['MARCA_ID'], String)
+    media_url = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['URL_MEDIA'], String)
     descripcion_corta = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['SHORT_DESCRIPTION'], String)
     descripcion_larga = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['DESCRIPCION_LARGA'], String)
+    description_producto = Column(cfg['DB_COLUMNS_DATA']['PRODUCTS']['DESCRIPCION_PRODUCTO'], String)
 
     def manage_products_database(self,
                                  integracion_id,
@@ -665,7 +677,9 @@ class ProductsTable(Base):
                                  category_id,
                                  marca_id,
                                  short_desc,
-                                 large_description):
+                                 large_description,
+                                 url_media,
+                                 description_producto):
         try:
 
             session = self
@@ -688,7 +702,9 @@ class ProductsTable(Base):
                                     category_id,
                                     marca_id,
                                     short_desc,
-                                    large_description)
+                                    large_description,
+                                    url_media,
+                                    description_producto)
 
             else:
 
@@ -704,7 +720,9 @@ class ProductsTable(Base):
                                    category_id,
                                    marca_id,
                                    short_desc,
-                                   large_description)
+                                   large_description,
+                                   url_media,
+                                   description_producto)
 
                 # product_inserted = validate_product_exists(session, integracion_id, sku)
 
@@ -852,7 +870,8 @@ def get_config_constant_file():
     """
 
     # TEST
-    # _constants_file = "constants/constants.yml"
+    # _constants_file = "/home/jorge/Documents/Projects/tecnofinLayouts/projects/PaginaB2COFIXNORMAL/integrators/" \
+    #                  "ct_online/getProductsInt/constants/constants.yml"
 
     # PROD
     _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
