@@ -1,23 +1,22 @@
 # Database constants connection data
 # PROD
 DB_ORACLE_PROD:
-  USER_DB: 'xapps'
-  PASSWORD_DB: 'xapps'
-  HOST_DB: '192.168.100.93'
+  USER_DB: XXXX
+  PASSWORD_DB: XXXX
+  HOST_DB: '192.168.XXX.XXX'
   PORT_DB: '1521'
   DATABASE_NAME: 'xe'
-  SID_DB_TEST: 'prod'
+  SID_DB_TEST: XXXX
   SQL_DRIVER: 'oracle'
 
 # TEST
 DB_ORACLE_TEST:
-  USER_DB_TEST: 'xapps'
-  PASSWORD_DB_TEST: 'xapps'
-  HOST_DB_TEST: '192.168.100.132'
-  # HOST_DB_TEST: 'webappstest01'
+  USER_DB_TEST: XXXX
+  PASSWORD_DB_TEST: XXXX
+  HOST_DB_TEST: '192.168.XXX.XXX'
   PORT_DB_TEST: '1521'
   SERVICE_DB_TEST: 'xe'
-  SID_DB_TEST: 'prod'
+  SID_DB_TEST: XXXX
   SQL_DRIVER: 'oracle'
 
 # DATABASE TABLES NAME
@@ -76,9 +75,9 @@ DB_COL_DATA:
 
 # CT Integration Platform Data:
 CT_ACCESS_DATA:
-  EMAIL: carlosvargas@ofix.mx
-  CLIENTE: VER1832
-  RFC: OFI920113KZ8
+  EMAIL: alguien@empresa.com
+  CLIENTE: XXXXX
+  RFC: XXXXXXXXXXX
 
 # WS URL to get Access_Token
 CT_WS_OPERATIVES:
@@ -96,7 +95,7 @@ CT_WS_OPERATIVES:
 
 # WS URL to connect CT's operatives:
 CT_WS_URL_MASTER:
-  URL_WS_CT: http://187.210.141.12:3001
+  URL_WS_CT: http://187.XXX.XXX.XXX:XXXX
 
 # Integration Data
 INTEGRACION_SOURCES:
@@ -125,6 +124,6 @@ EXT_LAYOUT_IMAGES_CT: '.json'
 EMAIL_SETTINGS:
   PORT: '465'  # For SSL
   SMTP_SERVER: smtp.gmail.com
-  SENDER_EMAIL: monitoreo-ti@ofix.mx
-  RECEIVER_EMAIL: ti@ofix.mx
-  PASSWORD: Y*0am1%Oidfo9jYYVod&
+  SENDER_EMAIL: correo@empresa.com
+  RECEIVER_EMAIL: correo@empresa.com
+  PASSWORD: XXXXXXXXXXXXXXXX
