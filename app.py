@@ -795,8 +795,6 @@ def parser_products_integration():
 
                     especs_counter = 1
 
-                    descripcion_larga = '|* Modelo: ' + _modelo
-
                     if 'especificacion' in productos_json:
 
                         especificaciones = productos_json['especificacion']
@@ -814,6 +812,8 @@ def parser_products_integration():
 
                             desc_type = scrub_data(_espec_type)
                             desc_value = scrub_data(_espec_value)
+                            
+                            descripcion_larga = '|* Modelo: ' + _modelo
 
                             descripcion_larga += '|* ' + str(desc_type) + ': ' + str(desc_value)
 
@@ -840,6 +840,8 @@ def parser_products_integration():
                         # session.commit()
 
                     else:
+                        
+                        descripcion_larga = '|* Modelo: ' + _modelo
 
                         logger.info('Descripcion_Larga Producto: %s', str(descripcion_larga))
 
@@ -1032,11 +1034,10 @@ def get_config_constant_file():
     :rtype: object
     """
     # TEST
-    # _constants_file = "/home/jorge/Documents/Projects/tecnofinLayouts/projects/PaginaB2COFIXNORMAL/integrators/"
-    #                   "ct_online/getProductsInt/constants/constants.yml"
+    # _constants_file = "constants/constants.yml"
 
     # PROD
-    _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
+    _constants_file = "constants/constants.yml"
 
     cfg = Const.get_constants_file(_constants_file)
 
