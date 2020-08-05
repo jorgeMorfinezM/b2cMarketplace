@@ -507,7 +507,7 @@ def get_config_constant_file():
     _constants_file = "constants/constants.yml"
 
     # PROD
-    # _constants_file = "/ofix/tienda_virtual/parserCt/constants/constants.yml"
+    # _constants_file = "constants/constants.yml"
 
     cfg = Const.get_constants_file(_constants_file)
 
